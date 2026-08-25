@@ -4,12 +4,12 @@ Verified stack: Ionic React **9.0.0** · React **19.2** · Vite **8.2** · TypeS
 
 ## Verification results
 
-| Target | Result | Artifact |
-|---|---|---|
-| Web dev/build | ✅ | `dist/` (relative paths via `base: './'`), build ~0.5s |
-| Android | ✅ | `android/app/build/outputs/apk/debug/app-debug.apk` (4.3 MB debug) |
-| Desktop | ✅ | `electron/dist/win-unpacked/Ionic Everywhere Reference.exe` |
-| One-shot sync | ✅ | `bun run sync` = build + `cap sync android` + `cap sync @capawesome/capacitor-electron` |
+| Target        | Result | Artifact                                                                                |
+| ------------- | ------ | --------------------------------------------------------------------------------------- |
+| Web dev/build | ✅     | `dist/` (relative paths via `base: './'`), build ~0.5s                                  |
+| Android       | ✅     | `android/app/build/outputs/apk/debug/app-debug.apk` (4.3 MB debug)                      |
+| Desktop       | ✅     | `electron/dist/win-unpacked/Ionic Everywhere Reference.exe`                             |
+| One-shot sync | ✅     | `bun run sync` = build + `cap sync android` + `cap sync @capawesome/capacitor-electron` |
 
 ## Gotchas discovered (must inform CLI design)
 
@@ -17,7 +17,7 @@ Verified stack: Ionic React **9.0.0** · React **19.2** · Vite **8.2** · TypeS
    `--no-interactive`, likely the account/telemetry prompt). Our CLI hand-rolls the
    project instead — no dependency on `@ionic/cli`. This is a feature.
 2. **Bun `add` can rewrite package.json dropping custom fields** (observed with
-   bun 1.4-canary). Templates must always ship a *complete* package.json; never
+   bun 1.4-canary). Templates must always ship a _complete_ package.json; never
    rely on incremental edits during scaffolding.
 3. **Ionic 9 + React Router 6 API changes:**
    - `IonReactRouter` / `IonReactHashRouter` / `IonReactMemoryRouter` are exported from

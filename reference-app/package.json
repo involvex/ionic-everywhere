@@ -1,33 +1,49 @@
 {
-  "name": "ionic-everywhere-reference",
-  "private": true,
-  "version": "0.1.0",
-  "description": "Reference app for @involvex/ionic-everywhere - one codebase, web + Android + desktop",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "sync": "bun run build && cap sync android && cap sync @capawesome/capacitor-electron",
-    "run:android": "cap run android",
-    "open:android": "cap open android"
-  },
-  "dependencies": {
-    "@capacitor/android": "^8.5.0",
-    "@capacitor/core": "^8.5.0",
-    "@capawesome/capacitor-electron": "^0.1.0",
-    "@ionic/react": "^9.0.0",
-    "@ionic/react-router": "^9.0.0",
-    "ionicons": "^8.1.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
-  },
-  "devDependencies": {
-    "@capacitor/cli": "^8.5.0",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
-    "@vitejs/plugin-react": "^6.1.0",
-    "typescript": "^7.0.2",
-    "vite": "^8.2.2"
-  }
+	"name": "ionic-everywhere-reference",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Reference app for @involvex/ionic-everywhere - one codebase, web + Android + desktop",
+	"type": "module",
+	"scripts": {
+		"preandroid": "bun run build && cap sync android",
+		"android": "cap run android",
+		"build": "tsc --noEmit && vite build",
+		"build:all": "bun run build:android && bun run build:desktop",
+		"build:android": "bun run build && cap sync android && cd android && gradlew assembleDebug",
+		"build:desktop": "bun run build && cap sync @capawesome/capacitor-electron && cd electron && bun run pack",
+		"predesktop": "bun run build && cap sync @capawesome/capacitor-electron",
+		"desktop": "cd electron && bun run start",
+		"dev": "vite",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"open:android": "cap open android",
+		"preview": "vite preview",
+		"sync": "bun run build && cap sync android && cap sync @capawesome/capacitor-electron",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@capacitor/android": "^8.5.0",
+		"@capacitor/core": "^8.5.0",
+		"@capawesome/capacitor-electron": "^0.1.0",
+		"@ionic/react": "^9.0.0",
+		"@ionic/react-router": "^9.0.0",
+		"ionicons": "^8.1.0",
+		"react": "^19.2.8",
+		"react-dom": "^19.2.8"
+	},
+	"devDependencies": {
+		"@capacitor/cli": "^8.5.0",
+		"@eslint/js": "^10.0.1",
+		"@types/react": "^19.2.18",
+		"@types/react-dom": "^19.2.5",
+		"@vitejs/plugin-react": "^6.1.0",
+		"eslint": "^10.0.0",
+		"globals": "^17.11.0",
+		"prettier": "^3.8.2",
+		"typescript": "^7.0.2",
+		"typescript-eslint": "^8.68.0",
+		"vite": "^8.2.2"
+	}
 }

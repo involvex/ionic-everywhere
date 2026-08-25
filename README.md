@@ -37,34 +37,40 @@ navigate identical routes, so the same navigation model feels native everywhere.
 
 ## Generated project scripts
 
-| Command | What it does |
-|---|---|
-| `dev` | Web dev server |
-| `build` | Type-check + production web build (`dist/`) |
-| `sync` | Build once, copy into Android + Electron shells |
-| `run:android` | Run on device/emulator via Capacitor |
-| `open:android` | Open Android project in Android Studio |
-| `dev:desktop` | Build web + electron main process, open window |
-| `build:desktop` | Package desktop installer/portable (electron-builder) |
-| `build:android` | Sync + assemble debug APK |
-| `build:all` | Android + desktop in sequence |
+| Command           | What it does                                          |
+| ----------------- | ----------------------------------------------------- |
+| `dev`             | Web dev server                                        |
+| `build`           | Type-check + production web build (`dist/`)           |
+| `typecheck`       | TypeScript check only                                 |
+| `lint` / `format` | ESLint / Prettier quality gates                       |
+| `sync`            | Build once, copy into Android + Electron shells       |
+| `android`         | Build + sync, then run on device/emulator             |
+| `desktop`         | Build + sync, then open the Electron window           |
+| `open:android`    | Open Android project in Android Studio                |
+| `build:desktop`   | Package desktop installer/portable (electron-builder) |
+| `build:android`   | Sync + assemble debug APK                             |
+| `build:all`       | Android + desktop in sequence                         |
+
+Scripts are generated for your chosen package manager (`--pm bun|npm|pnpm|yarn`) —
+with bun, internal chains use `bun run`, not `npm run`. The `android` and `desktop`
+commands auto-build + sync first via their `pre*` hooks.
 
 ## Requirements
 
-| Target | Needs |
-|---|---|
-| Web | Node ≥ 20 (or Bun ≥ 1.3) |
-| Desktop | Nothing extra (Electron downloads on first package) |
+| Target  | Needs                                                    |
+| ------- | -------------------------------------------------------- |
+| Web     | Node ≥ 20 (or Bun ≥ 1.3)                                 |
+| Desktop | Nothing extra (Electron downloads on first package)      |
 | Android | JDK **21+** (`JAVA_HOME`) · Android SDK (`ANDROID_HOME`) |
 
 ## Stack
 
-| Layer | Tech |
-|---|---|
-| UI | [Ionic React 9](https://ionicframework.com/docs/react) · React 19 · Vite 8 · TypeScript |
-| Navigation | Adaptive `IonSplitPane` ⇄ `IonTabs`, React Router 6 via `@ionic/react-router` |
-| Mobile | [Capacitor 8](https://capacitorjs.com) |
-| Desktop | Electron 43 via [@capawesome/capacitor-electron](https://github.com/capawesome-team/capacitor-electron) |
+| Layer      | Tech                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------- |
+| UI         | [Ionic React 9](https://ionicframework.com/docs/react) · React 19 · Vite 8 · TypeScript                 |
+| Navigation | Adaptive `IonSplitPane` ⇄ `IonTabs`, React Router 6 via `@ionic/react-router`                           |
+| Mobile     | [Capacitor 8](https://capacitorjs.com)                                                                  |
+| Desktop    | Electron 43 via [@capawesome/capacitor-electron](https://github.com/capawesome-team/capacitor-electron) |
 
 ## Why this stack?
 

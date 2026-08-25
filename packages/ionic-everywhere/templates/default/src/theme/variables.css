@@ -2,7 +2,7 @@
 }
 
 @media (min-width: 992px) {
-  ion-tab-bar {
-    display: none;
-  }
+	ion-tab-bar {
+		display: none;
+	}
 }

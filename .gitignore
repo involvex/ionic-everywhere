@@ -8,6 +8,9 @@ dist/
 .vite/
 coverage/
 
+# local CLI test output
+.test/
+
 # env / os
 .env
 .env.*
@@ -19,3 +22,5 @@ reference-app/android/
 reference-app/electron/
 reference-app/dist/
 reference-app/bun.lock
+
+.test

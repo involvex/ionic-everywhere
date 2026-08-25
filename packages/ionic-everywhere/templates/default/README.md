@@ -1,19 +1,26 @@
-# __APP_NAME__
+# **APP_NAME**
 
 Cross-platform app scaffolded with [@involvex/ionic-everywhere](https://github.com/involvex/ionic-everywhere).
 One responsive Ionic React codebase building **Web**, **Android** and **Desktop**.
 
 ## Scripts
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Web dev server (hot reload) |
-| `npm run build` | Type-check + production web build to `dist/` |
-| `npm run sync` | Build + copy `dist/` into Android and Electron shells |
-| `npm run dev:desktop` | Build once, open the Electron window |
-| `npm run build:desktop` | Package installer/portable per OS (electron-builder) |
-| `npm run build:android` | Debug APK (`android/app/build/outputs/apk/debug/`) |
-| `npm run open:android` | Open the Android project in Android Studio |
+| Command                   | What it does                                         |
+| ------------------------- | ---------------------------------------------------- |
+| `dev`                     | Web dev server (hot reload)                          |
+| `build`                   | Type-check + production web build to `dist/`         |
+| `typecheck`               | TypeScript check only (`tsc --noEmit`)               |
+| `lint` / `lint:fix`       | ESLint                                               |
+| `format` / `format:check` | Prettier                                             |
+| `android`                 | Build + sync, then run on device/emulator            |
+| `desktop`                 | Build + sync, then open the Electron window          |
+| `open:android`            | Open the Android project in Android Studio           |
+| `build:android`           | Debug APK (`android/app/build/outputs/apk/debug/`)   |
+| `build:desktop`           | Package installer/portable per OS (electron-builder) |
+| `build:all`               | Android + desktop in sequence                        |
+
+The `android` / `desktop` commands run their `pre*` hooks first, which build the web
+bundle and sync it into the native shell automatically — no manual sync needed.
 
 ## Layout
 

@@ -4,23 +4,17 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
 	{
-		ignores: [
-			'**/dist/**',
-			'**/node_modules/**',
-			'**/templates/**',
-			'reference-app/**',
-			'eslint.config.js',
-			'.test/**',
-		],
+		ignores: ['dist/**', 'node_modules/**', 'android/**', 'electron/**'],
 	},
 	js.configs.recommended,
 	...tseslint.configs.recommended,
 	{
-		files: ['**/*.ts', '**/*.mjs'],
+		files: ['**/*.{ts,tsx}'],
 		languageOptions: {
 			ecmaVersion: 2022,
 			sourceType: 'module',
 			globals: {
+				...globals.browser,
 				...globals.node,
 			},
 		},
@@ -29,7 +23,6 @@ export default tseslint.config(
 				'error',
 				{argsIgnorePattern: '^_', varsIgnorePattern: '^_'},
 			],
-			'@typescript-eslint/consistent-type-imports': 'error',
 		},
 	},
 )

@@ -27,8 +27,11 @@ tests/                       Vitest unit tests (import from packages/*/src direc
 bun install            # workspace install (root only)
 bun run lint           # ESLint 9 flat config
 bun run test           # vitest
-bun run verify         # lint + test (also wired as prebuild)
+bun run format         # prettier (shareable @involvex/prettier-config)
+bun run verify         # format + lint:fix + test (also wired as prebuild)
 bun run build          # tsc for packages/* (runs verify first via prebuild)
+bun run cli:dev        # watch-build the CLI package
+bun run cli:test       # build CLI, scaffold .test/demo-app end-to-end, assert output
 ```
 
 There is no separate typecheck script; the CLI package's `build` runs `tsc`, which is
@@ -57,8 +60,12 @@ type-only pass if needed.
 4. **Ionic React 9 routing**: `IonReactRouter`/`IonReactHashRouter` come from
    `@ionic/react-router` (not `@ionic/react`). RR6 `<Route>` has no `exact` prop.
 5. **Vite config must keep `base: './'`** or assets break under Electron/Capacitor shells.
-6. Template `package.json` chains internal steps via `npm run ...` deliberately so they
-   work regardless of which runner invoked them.
+6. Template `package.json` uses canonical `npm run ...` chains; `scaffold()` rewrites
+   them to the chosen package manager (`applyRunner`) and `prunePlatformScripts()`
+   removes scripts for skipped platforms. Keep both in sync when editing template
+   scripts — `android`/`desktop` rely on bun/npm `pre*` hooks for auto build+sync.
+7. Reference-app mirrors the template's final (bun) shape so verification matches
+   what users get. Port template changes there before committing them.
 
 ## Changing the generated app
 
