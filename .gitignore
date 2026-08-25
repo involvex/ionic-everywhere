@@ -1,0 +1,21 @@
+# dependencies / builds
+node_modules/
+dist/
+*.tsbuildinfo
+
+# caches
+.eslintcache
+.vite/
+coverage/
+
+# env / os
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# reference app generated/native artifacts (regenerated via cap add)
+reference-app/android/
+reference-app/electron/
+reference-app/dist/
+reference-app/bun.lock

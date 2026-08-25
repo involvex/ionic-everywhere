@@ -1,0 +1,33 @@
+{
+  "name": "ionic-everywhere-reference",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Reference app for @involvex/ionic-everywhere - one codebase, web + Android + desktop",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "sync": "bun run build && cap sync android && cap sync @capawesome/capacitor-electron",
+    "run:android": "cap run android",
+    "open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capawesome/capacitor-electron": "^0.1.0",
+    "@ionic/react": "^9.0.0",
+    "@ionic/react-router": "^9.0.0",
+    "ionicons": "^8.1.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  }
+}

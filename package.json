@@ -1,0 +1,28 @@
+{
+  "name": "ionic-everywhere-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "@involvex/ionic-everywhere - one responsive Ionic React codebase that builds web, Android and desktop",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "bun run lint && bun run test",
+    "prebuild": "bun run verify",
+    "build": "bun run --filter @involvex/ionic-everywhere build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^16.0.0",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0"
+  }
+}

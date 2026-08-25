@@ -1,0 +1,38 @@
+{
+  "name": "__APP_NAME_KEBAB__",
+  "private": true,
+  "version": "0.1.0",
+  "description": "__APP_NAME__ - built with @involvex/ionic-everywhere",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "sync": "bun run build && cap sync android && cap sync @capawesome/capacitor-electron",
+    "sync:npm": "npm run build && cap sync android && cap sync @capawesome/capacitor-electron",
+    "run:android": "cap run android",
+    "open:android": "cap open android",
+    "dev:desktop": "npm run build && cd electron && npm run build && npm run start",
+    "build:desktop": "npm run sync:npm && cd electron && npm run pack",
+    "build:android": "npm run sync:npm && cd android && ./gradlew assembleDebug",
+    "build:all": "npm run build:android && npm run build:desktop"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capawesome/capacitor-electron": "^0.1.0",
+    "@ionic/react": "^9.0.0",
+    "@ionic/react-router": "^9.0.0",
+    "ionicons": "^8.1.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  }
+}
