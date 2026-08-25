@@ -66,6 +66,10 @@ type-only pass if needed.
    scripts — `android`/`desktop` rely on bun/npm `pre*` hooks for auto build+sync.
 7. Reference-app mirrors the template's final (bun) shape so verification matches
    what users get. Port template changes there before committing them.
+8. `electron/package.json` is owned by the Capawesome platform generator — never
+   merge it into the app root. The CLI only injects a `workspaces: ["electron"]`
+   pointer AFTER `cap add` runs (bun/npm fail on missing workspace dirs), then
+   reinstalls from the root so there is a single lockfile.
 
 ## Changing the generated app
 

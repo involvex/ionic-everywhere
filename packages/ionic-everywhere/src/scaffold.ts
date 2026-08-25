@@ -78,6 +78,27 @@ export function scaffold(opts: ScaffoldOptions): string[] {
 	return written
 }
 
+export function applyWorkspaces(
+	pkgPath: string,
+	includeElectron: boolean,
+): void {
+	const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
+		workspaces?: string[]
+	}
+	const ws = new Set(pkg.workspaces ?? [])
+	if (includeElectron) {
+		ws.add('electron')
+	} else {
+		ws.delete('electron')
+	}
+	if (ws.size > 0) {
+		pkg.workspaces = [...ws].sort()
+	} else {
+		delete pkg.workspaces
+	}
+	writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
+}
+
 export function prunePlatformScripts(
 	pkgPath: string,
 	android: boolean,

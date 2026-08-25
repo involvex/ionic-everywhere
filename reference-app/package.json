@@ -4,6 +4,9 @@
 	"private": true,
 	"description": "Reference app for @involvex/ionic-everywhere - one codebase, web + Android + desktop",
 	"type": "module",
+	"workspaces": [
+		"electron"
+	],
 	"scripts": {
 		"preandroid": "bun run build && cap sync android",
 		"android": "cap run android",

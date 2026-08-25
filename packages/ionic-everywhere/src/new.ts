@@ -3,7 +3,7 @@ import {execSync} from 'node:child_process'
 import {existsSync} from 'node:fs'
 import {isAbsolute, join, resolve} from 'node:path'
 import {formatReport, runChecks} from './doctor'
-import {prunePlatformScripts, scaffold} from './scaffold'
+import {applyWorkspaces, prunePlatformScripts, scaffold} from './scaffold'
 import {
 	deriveAppId,
 	detectPm,
@@ -193,8 +193,12 @@ export async function runNew(opts: NewOptions): Promise<number> {
 		p.log.message(`  cd ${cfg.dirName}`)
 		p.log.message(`  ${pmInstall(cfg.pm)}`)
 		if (cfg.android) p.log.message(`  ${pmRun(cfg.pm)} cap add android`)
-		if (cfg.electron)
+		if (cfg.electron) {
 			p.log.message(`  ${pmRun(cfg.pm)} cap add @capawesome/capacitor-electron`)
+			p.log.message(
+				`  ${pmInstall(cfg.pm)}   # picks up electron deps via workspaces`,
+			)
+		}
 		p.outro('Done.')
 		return 0
 	}
@@ -234,8 +238,11 @@ export async function runNew(opts: NewOptions): Promise<number> {
 				`${pmRun(cfg.pm)} cap add @capawesome/capacitor-electron`,
 				cfg.targetDir,
 			)
-			run(pmInstall(cfg.pm), join(cfg.targetDir, 'electron'))
 			s.stop('Desktop platform added (electron/)')
+			applyWorkspaces(join(cfg.targetDir, 'package.json'), true)
+			s.start('Installing electron deps (workspace root)')
+			run(pmInstall(cfg.pm), cfg.targetDir)
+			s.stop('Dependencies installed')
 		} catch (err) {
 			s.stop('Electron platform failed')
 			die(

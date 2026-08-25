@@ -23,4 +23,4 @@ reference-app/electron/
 reference-app/dist/
 reference-app/bun.lock
 
-.test
+.cline

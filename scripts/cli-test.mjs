@@ -60,6 +60,18 @@ if (!pkg.scripts.sync.startsWith('bun run build')) {
 	)
 	process.exit(1)
 }
+if (!Array.isArray(pkg.workspaces) || !pkg.workspaces.includes('electron')) {
+	console.error(
+		`cli:test FAILED - electron workspace missing: ${JSON.stringify(pkg.workspaces)}`,
+	)
+	process.exit(1)
+}
+if (existsSync(join(target, 'electron', 'bun.lock'))) {
+	console.error(
+		'cli:test FAILED - electron/bun.lock exists, installs are not workspace-consolidated',
+	)
+	process.exit(1)
+}
 
 console.log(
 	'cli:test OK - scaffolded web + android + desktop into .test/demo-app',

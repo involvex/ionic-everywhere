@@ -55,6 +55,10 @@ Scripts are generated for your chosen package manager (`--pm bun|npm|pnpm|yarn`)
 with bun, internal chains use `bun run`, not `npm run`. The `android` and `desktop`
 commands auto-build + sync first via their `pre*` hooks.
 
+The Electron shell is wired as a **workspace member** of the generated app: one
+`install`, one lockfile, no separate setup inside `electron/` — while leaving the
+Capawesome-generated platform files untouched.
+
 ## Requirements
 
 | Target  | Needs                                                    |

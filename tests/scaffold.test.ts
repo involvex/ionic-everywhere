@@ -11,6 +11,7 @@ import {join} from 'node:path'
 import {afterAll, describe, expect, it} from 'vitest'
 import {
 	applyTokens,
+	applyWorkspaces,
 	prunePlatformScripts,
 	scaffold,
 	templateDir,
@@ -128,6 +129,42 @@ describe('scaffold', () => {
 		expect(pkg.scripts.typecheck).toBe('tsc --noEmit')
 		expect(pkg.scripts.lint).toBe('eslint .')
 		expect(pkg.scripts.format).toBe('prettier --write .')
+	})
+})
+
+describe('applyWorkspaces', () => {
+	function makePkgWith(workspaces?: string[]): string {
+		const dir = makeTemp()
+		const pkgPath = join(dir, 'package.json')
+		writeFileSync(
+			pkgPath,
+			JSON.stringify({name: 'x', ...(workspaces ? {workspaces} : {})}),
+		)
+		return pkgPath
+	}
+
+	it('adds electron workspace when enabled', () => {
+		const pkgPath = makePkgWith()
+		applyWorkspaces(pkgPath, true)
+		expect(JSON.parse(readFileSync(pkgPath, 'utf8')).workspaces).toEqual([
+			'electron',
+		])
+	})
+
+	it('keeps existing workspace entries', () => {
+		const pkgPath = makePkgWith(['packages/*'])
+		applyWorkspaces(pkgPath, true)
+		expect(JSON.parse(readFileSync(pkgPath, 'utf8')).workspaces).toEqual([
+			'electron',
+			'packages/*',
+		])
+	})
+
+	it('removes workspaces entirely when electron disabled', () => {
+		const pkgPath = makePkgWith(['electron'])
+		applyWorkspaces(pkgPath, false)
+		const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
+		expect(pkg.workspaces).toBeUndefined()
 	})
 })
 
