@@ -98,12 +98,12 @@ duplicate landed work; FEAT-008/016/020 are carried forward into the tiers.
 
 ### Tier 3 — High tier (Phases B–D)
 
-| ID              | Item                      | Why it matters                                                                                                                                                                                                               | Dependencies                                 |
-| --------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| FEAT-029        | `upgrade` command         | Biggest user-facing value for existing projects: re-sync scripts from the canonical registry, re-inject devtools hook (both already idempotent helpers), copy-if-missing new template files, drift report on modified files. | Depends on FEAT-022 manifest (`"schema":1`)  |
-| FEAT-008 (+020) | Template variants         | Data-driven nav model first (single source drives AppMenu + tabs + routes); variant overlays afterwards. Absorbs FEAT-020 polish and FEAT-024's platform-row hiding.                                                         | Existing deferred item                       |
-| FEAT-030        | Release/signing helper    | Keystore generation guidance, env-var-guarded gradle signing config, `build:android:release` script + docs.                                                                                                                  | Reference-app verified before template port  |
-| FEAT-016        | npm publish w/ provenance | First-release pipeline.                                                                                                                                                                                                      | Still blocked on npm trusted-publisher setup |
+| ID              | Item                      | Why it matters                                                                                                                                                                                                               | Dependencies                                                                                 |
+| --------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| FEAT-029        | `upgrade` command         | Biggest user-facing value for existing projects: re-sync scripts from the canonical registry, re-inject devtools hook (both already idempotent helpers), copy-if-missing new template files, drift report on modified files. | Depends on FEAT-022 manifest (`"schema":1`) — **design drafted**, see "Phase B design" below |
+| FEAT-008 (+020) | Template variants         | Data-driven nav model first (single source drives AppMenu + tabs + routes); variant overlays afterwards. Absorbs FEAT-020 polish and FEAT-024's platform-row hiding.                                                         | Existing deferred item                                                                       |
+| FEAT-030        | Release/signing helper    | Keystore generation guidance, env-var-guarded gradle signing config, `build:android:release` script + docs.                                                                                                                  | Reference-app verified before template port                                                  |
+| FEAT-016        | npm publish w/ provenance | First-release pipeline.                                                                                                                                                                                                      | Still blocked on npm trusted-publisher setup                                                 |
 
 ---
 
@@ -132,14 +132,117 @@ AGENTS.md #9).
 
 ## Round-2 sequencing
 
-1. **Phase A (now):** quick wins FEAT-021 → 022 → 024 → 026 → 028 (all
-   CLI/template-side, zero new deps), then verification gates: `bun run verify`,
-   `bun run build`, `bun run cli:test`, fresh QA scaffold asserting manifest +
-   tokenized README + `.vscode/`, non-TTY pipe check.
-2. **Phase B:** FEAT-029 `upgrade` — design manifest schema v1 so the upgrade
-   path can rely on it from day one.
+1. **Phase A (SHIPPED 2026-08-26, commit 1f289b6):** quick wins FEAT-021 →
+   022 → 024 → 026 → 028. All verification gates passed (90/90 tests, build,
+   cli:test, QA scaffold assertions, non-TTY pipe check).
+2. **Phase B (IN PROGRESS):** FEAT-029 `upgrade` — design drafted below.
 3. **Phase C:** FEAT-008 variants (data-driven nav first, folding in FEAT-020).
 4. **Phase D:** FEAT-016 publish pipeline once npm trusted publishing is
    configured; FEAT-030 signing helper after a reference-app keystore run.
 5. Medium tier (FEAT-023, 025, 027, 031) slots into any gap; FEAT-027 is the
    cheapest standalone win if CI flakes first.
+
+---
+
+## Phase B design — FEAT-029 `upgrade` command (drafted 2026-08-26)
+
+Goal: bring previously generated projects up to the current template's
+tooling without touching user code, using the FEAT-022 manifest as the
+source of truth.
+
+### Command surface
+
+```
+ionic-everywhere upgrade [--dir <path>] [--pm <bun|npm|pnpm|yarn>]
+                         [--dry-run] [--force] [--yes]
+```
+
+- Project discovery reuses `findProjectRoot()` (`src/add.ts`) unless `--dir`
+  is explicit — identical semantics to `add`.
+- Non-TTY without `--yes` dies with actionable flags (FEAT-021 pattern).
+- `--dry-run` folds into this command: FEAT-014's deferral reason ("low value
+  until more phases exist") no longer holds — upgrade is that phase. FEAT-014
+  closes with FEAT-029 for `new` later if still wanted.
+
+### Version model
+
+- Compare manifest `generatorVersion` against running CLI version via a small
+  hand-rolled semver parser (no new deps). Equal → "already up to date"
+  (exit 0) unless `--force`. Older manifest → run plan. Missing/unparseable
+  version → adopt flow (below).
+
+### Adopt flow (manifest-less projects)
+
+Projects created before FEAT-022 have no `.ionic-everywhere.json`. First run
+infers options from `package.json` + `capacitor.config.ts` (appId token,
+platform dirs present, scripts' runner flavor ⇒ pm), writes a schema-1
+manifest, and proceeds. Adoption is itself idempotent and reported.
+
+### Upgrade steps (each an already-idempotent primitive where possible)
+
+1. **Scripts re-sync** — `syncPlatformScripts(pkgPath, android, electron, pm)`
+   restores pruned/missing scripts from the canonical registry. Drift policy:
+   interactive shows a key-level diff and confirms; `--yes` applies and
+   reports changed keys in the summary.
+2. **Workspaces pointer** — `applyWorkspaces(pkgPath, electron)`.
+3. **DevTools hook** — `ensureElectronDevToolsHook(root)` when electron
+   (already skips user-customized configs).
+4. **New-template-files copy-if-missing** — walk `templateDir()`; copy only
+   files absent in the target, then tokenize them with manifest options.
+   Exclusions: `package.json`, `capacitor.config.ts`, `index.html`,
+   `vite.config.ts`, `README.md`, `testing/` staging, `android/`,
+   `electron/`, `assets/`, `public/`, `node_modules`. Existing files are
+   never overwritten by construction (src/** user code stays safe).
+5. **Token-drift scan (report-only)** — flag residual `__APP_*__` tokens in
+   existing text files.
+6. **Manifest refresh** — bump `generatorVersion` to the running version,
+   set `updatedAt`; `schema` stays 1.
+
+### Explicit v1 non-goals
+
+- No dependency version bumps (Capacitor/Ionic majors) — advisory text only.
+- No regeneration of `android/` or `electron/` natives (that remains
+  `cap sync` / `add`); no overwrite of any existing file except surgical
+  JSON edits to `package.json`.
+
+### Safety rails
+
+- Default flow = compute plan, show it, confirm before applying (or `--yes`).
+- Warn when the project git tree is dirty before mutating anything.
+- Everything routes through a pure planner for testability:
+
+```ts
+interface UpgradePlan {
+	adopt?: {inferredOptions: ManifestOptions}
+	scriptChanges: Record<string, {from: string; to: string}>
+	workspaces: 'added' | 'unchanged'
+	devtoolsHook: 'injected' | 'present' | 'skipped-customized'
+	filesToCopy: string[]
+	tokenDrift: string[]
+	versionBump: {from: string; to: string} | null
+}
+// planUpgrade(projectRoot, cliVersion) -> UpgradePlan  (pure, unit-tested)
+// applyUpgrade(root, plan, opts)        -> exit code    (thin applier)
+```
+
+### Testing & CI
+
+- `tests/upgrade.test.ts`: planner purity + per-step behavior in temp dirs
+  (copy-if-missing respects exclusions; adopt flow infers correct pm;
+  script-diff reporting; idempotent second run = no-op plan).
+- New `scripts/cli-test-upgrade.mjs`: scaffold via dist CLI → simulate age
+  (downgrade manifest version, delete a script, remove a template file) →
+  `upgrade --yes` → assert restoration. Wired into the `scaffold-smoke` CI
+  job as one extra step.
+
+### Files touched (implementation round)
+
+`src/upgrade.ts` (new), `src/cli.ts` (+help), `src/dispatch.ts` (+action),
+`tests/upgrade.test.ts`, `scripts/cli-test-upgrade.mjs`,
+`.github/workflows/ci.yml`, this doc. Template untouched in v1.
+
+### Open decisions (non-blocking)
+
+1. Script-drift default under `--yes`: apply-and-report (recommended) vs skip.
+2. Ship adopt flow in v1 (recommended) or gate behind `--adopt`.
+3. Fold FEAT-014 `--dry-run` into FEAT-029 scope (recommended).
