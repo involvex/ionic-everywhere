@@ -4,7 +4,7 @@ import {isAbsolute, join, resolve} from 'node:path'
 import {formatReport, runChecks} from './doctor'
 import {prunePlatformScripts} from './platform-scripts'
 import {runStreaming} from './run'
-import {applyWorkspaces, scaffold} from './scaffold'
+import {applyWorkspaces, ensureElectronDevToolsHook, scaffold} from './scaffold'
 import {SCAFFOLD_LOG, step} from './step'
 import {
 	deriveAppId,
@@ -385,6 +385,7 @@ export async function runNew(
 			return 1
 		}
 		applyWorkspaces(join(cfg.targetDir, 'package.json'), true)
+		ensureElectronDevToolsHook(cfg.targetDir)
 		if (
 			!(await step(
 				s,
@@ -447,6 +448,7 @@ export async function runNew(
 			...(cfg.electron
 				? [
 						`  ${cfg.pm} run desktop        # open desktop app (auto build+sync)`,
+						`  ${cfg.pm} run desktop:dev   # vite + electron, hot reload + DevTools`,
 						`  ${cfg.pm} run build:desktop # installer/portable`,
 					]
 				: [`  # add desktop later: ionic-everywhere add desktop`]),

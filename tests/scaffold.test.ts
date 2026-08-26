@@ -213,6 +213,7 @@ const FULL_SCRIPTS = {
 	preandroid: 'npm run build && cap sync android',
 	'open:android': 'cap open android',
 	desktop: 'cd electron && npm run start',
+	'desktop:dev': 'node scripts/desktop-dev.mjs',
 	predesktop: 'npm run build && cap sync @capawesome/capacitor-electron',
 	'build:desktop':
 		'npm run build && cap sync @capawesome/capacitor-electron && cd electron && npm run pack',

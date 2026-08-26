@@ -102,6 +102,14 @@ load ... retrying` on stderr while waiting).
          in dev (vite-plugin-pwa `devOptions` disabled). A future `desktop:dev` one-liner
          would need a process manager dep (e.g. `concurrently`) — deferred to keep the
          template dep set lean.
+         **Shipped (2026-08-26):** `desktop:dev` now ships with no extra dependency -
+         `scripts/desktop-dev.mjs` spawns Vite itself (`node vite/bin/vite.js`, parsing
+         the ANSI-decorated `Local:` URL), then launches Electron with
+         `CAPACITOR_ELECTRON_DEV_SERVER_URL`; both die together on exit. DevTools
+         auto-open via an idempotent CLI-injected `hooks.onWindowCreated` block in
+         `electron/capacitor.electron.config.ts`, guarded by the same env var.
+         Gotchas hit while building it: Vite's `exports` map does not expose
+         `./bin/vite.js` (resolve by path), and its startup banner is ANSI-colored.
 16. **Electron binaries need an explicit install under bun:** bun blocks lifecycle
     scripts by default, so `electron/dist/` never materializes after install
     (`electron.exe` missing). Fix inside the platform dir:

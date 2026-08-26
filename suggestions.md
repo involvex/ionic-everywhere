@@ -19,8 +19,8 @@
 > template port deferred. An earlier revision credited "FEAT-011's registry
 > drift-guard" as landed — that guard belongs to FEAT-019.
 >
-> Remaining open: none from this round. Deferred: FEAT-008, 014, 016, 020 and
-> the FEAT-009 template port (see "Deferred").
+> Remaining open: none from this round. Deferred: FEAT-008, 014, 016, 020
+> (see "Deferred"). FEAT-009 shipped on 2026-08-26 (see "Done this round").
 
 ## Executive summary
 
@@ -37,18 +37,18 @@ token replacement). Verification state at close-out: 70/70 unit tests,
 
 ## Done this round (2026-08-26)
 
-| ID       | Summary                                    | Evidence                                                                                                                                     |
-| -------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| FEAT-006 | GitHub Actions CI + manual artifacts build | `.github/workflows/ci.yml` (lint-test matrix + scaffold-smoke), `.github/workflows/artifacts.yml`                                            |
-| FEAT-007 | Real preferences + dark mode + live List   | `templates/default/src/hooks/useStoredState.ts`; SettingsPage/ListPage/App wired; `@capacitor/preferences ^8.0.1`; `dark.class.css` imported |
-| FEAT-009 | Live-reload desktop prototype              | `reference-app/NOTES.md` #15/#16 — native `CAPACITOR_ELECTRON_DEV_SERVER_URL`, verified live; no CLI changes                                 |
-| FEAT-010 | Doctor upgrades                            | PATH java fallback + adb depth check + `--json` + non-zero exit (`allRequiredOk`); injectable `runChecks`                                    |
-| FEAT-011 | Token auto-detection                       | `tokenizeCopiedTree()` in `src/scaffold.ts`; `TEXT_FILES` removed; decoy/binary tests                                                        |
-| FEAT-012 | Opt-in Vitest scaffold                     | `--tests` flag/prompt; staging overlay under `templates/default/testing/`; deps merged via `applyTestingScaffold()`                          |
-| FEAT-013 | Failure rollback                           | `cleanupAfterFailure()` in `runNew`; `--keep-on-failure`; auto-yes under `--yes`; mocked-step tests                                          |
-| FEAT-015 | `detectPm` availability probe              | Injectable probe in `src/util.ts`; bun→npm→pnpm→yarn fallback; `commandExists` moved to util                                                 |
-| FEAT-017 | Pure `applyRunner`                         | Clones input before rewriting; purity test in `tests/scaffold.test.ts`                                                                       |
-| FEAT-018 | Dispatch/config glue tests                 | Pure `defaultAction` in `src/dispatch.ts`; injectable `resolveConfig(opts, prompts)`; `tests/cli-dispatch.test.ts`                           |
+| ID       | Summary                                    | Evidence                                                                                                                                                 |
+| -------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FEAT-006 | GitHub Actions CI + manual artifacts build | `.github/workflows/ci.yml` (lint-test matrix + scaffold-smoke), `.github/workflows/artifacts.yml`                                                        |
+| FEAT-007 | Real preferences + dark mode + live List   | `templates/default/src/hooks/useStoredState.ts`; SettingsPage/ListPage/App wired; `@capacitor/preferences ^8.0.1`; `dark.class.css` imported             |
+| FEAT-009 | Live-reload desktop dev loop               | `desktop:dev` script (`scripts/desktop-dev.mjs`, zero new deps) + DevTools auto-open via injected `onWindowCreated` hook; verified live in reference-app |
+| FEAT-010 | Doctor upgrades                            | PATH java fallback + adb depth check + `--json` + non-zero exit (`allRequiredOk`); injectable `runChecks`                                                |
+| FEAT-011 | Token auto-detection                       | `tokenizeCopiedTree()` in `src/scaffold.ts`; `TEXT_FILES` removed; decoy/binary tests                                                                    |
+| FEAT-012 | Opt-in Vitest scaffold                     | `--tests` flag/prompt; staging overlay under `templates/default/testing/`; deps merged via `applyTestingScaffold()`                                      |
+| FEAT-013 | Failure rollback                           | `cleanupAfterFailure()` in `runNew`; `--keep-on-failure`; auto-yes under `--yes`; mocked-step tests                                                      |
+| FEAT-015 | `detectPm` availability probe              | Injectable probe in `src/util.ts`; bun→npm→pnpm→yarn fallback; `commandExists` moved to util                                                             |
+| FEAT-017 | Pure `applyRunner`                         | Clones input before rewriting; purity test in `tests/scaffold.test.ts`                                                                                   |
+| FEAT-018 | Dispatch/config glue tests                 | Pure `defaultAction` in `src/dispatch.ts`; injectable `resolveConfig(opts, prompts)`; `tests/cli-dispatch.test.ts`                                       |
 
 Also new tooling: `bun run clean` (`scripts/clean.mjs`) removes the `.test/`
 output produced by `cli:test`.
@@ -57,13 +57,12 @@ output produced by `cli:test`.
 
 ## Deferred (with reasons)
 
-| ID       | Item                                 | Reason                                                                                                     |
-| -------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| FEAT-008 | Template variants via `--template`   | Larger template refactor; needs nav data-model design first                                                |
-| FEAT-009 | Template port of `desktop:dev`       | Prototype proved feasibility; shipping wants a process-manager dep (e.g. concurrently) — decide next round |
-| FEAT-014 | `--dry-run` flag                     | Nice-to-have UX; low value until more phases exist                                                         |
-| FEAT-016 | npm publish workflow w/ provenance   | Requires npm trusted-publisher/OIDC setup + version-split decision                                         |
-| FEAT-020 | Template polish (ErrorBoundary etc.) | Polish batch; fold into next template-touching round                                                       |
+| ID       | Item                                 | Reason                                                             |
+| -------- | ------------------------------------ | ------------------------------------------------------------------ |
+| FEAT-008 | Template variants via `--template`   | Larger template refactor; needs nav data-model design first        |
+| FEAT-014 | `--dry-run` flag                     | Nice-to-have UX; low value until more phases exist                 |
+| FEAT-016 | npm publish workflow w/ provenance   | Requires npm trusted-publisher/OIDC setup + version-split decision |
+| FEAT-020 | Template polish (ErrorBoundary etc.) | Polish batch; fold into next template-touching round               |
 
 ---
 
@@ -92,6 +91,5 @@ AGENTS.md #9).
 
 ## Suggested next-round sequencing
 
-1. Decide FEAT-009 ship shape (experimental `desktop:dev` script vs docs-only) and whether to add a process-manager dep.
-2. FEAT-008 template variants (data-driven nav first), folding in FEAT-020 polish.
-3. FEAT-016 publish pipeline once npm trusted publishing is configured.
+1. FEAT-008 template variants (data-driven nav first), folding in FEAT-020 polish.
+2. FEAT-016 publish pipeline once npm trusted publishing is configured.

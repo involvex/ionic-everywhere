@@ -22,6 +22,7 @@ export const CANONICAL_SCRIPTS: Record<string, string> = {
 	'open:android': 'cap open android',
 	'build:android': `npm run build && cap sync ${CAP_PLATFORM_NAMES.android} && node scripts/gradle.mjs assembleDebug`,
 	desktop: 'cd electron && npm run start',
+	'desktop:dev': 'node scripts/desktop-dev.mjs',
 	predesktop: `npm run build && cap sync ${CAP_PLATFORM_NAMES.desktop}`,
 	'build:desktop': `npm run build && cap sync ${CAP_PLATFORM_NAMES.desktop} && cd electron && npm run pack`,
 }
@@ -34,7 +35,7 @@ const ANDROID_KEYS = [
 	'build:android',
 ]
 
-const DESKTOP_KEYS = ['desktop', 'predesktop', 'build:desktop']
+const DESKTOP_KEYS = ['desktop', 'desktop:dev', 'predesktop', 'build:desktop']
 
 export function buildSyncScript(android: boolean, electron: boolean): string {
 	let sync = 'npm run build'

@@ -2,7 +2,7 @@ import * as p from '@clack/prompts'
 import {existsSync} from 'node:fs'
 import {isAbsolute, join, resolve} from 'node:path'
 import {CAP_PLATFORM_NAMES, syncPlatformScripts} from './platform-scripts'
-import {applyWorkspaces} from './scaffold'
+import {applyWorkspaces, ensureElectronDevToolsHook} from './scaffold'
 import {step} from './step'
 import {detectPm, isValidPm, pmInstall, pmRun, VALID_PMS} from './util'
 
@@ -115,6 +115,7 @@ export async function runAdd(opts: AddOptions): Promise<number> {
 
 	if (platform === 'desktop') {
 		applyWorkspaces(pkgPath, true)
+		ensureElectronDevToolsHook(dir)
 		if (
 			opts.install &&
 			!(await step(
@@ -144,6 +145,7 @@ export async function runAdd(opts: AddOptions): Promise<number> {
 					]
 				: [
 						`  ${pm} run desktop        # open desktop app (auto build+sync)`,
+						`  ${pm} run desktop:dev   # vite + electron, hot reload + DevTools`,
 						`  ${pm} run build:desktop # installer/portable`,
 					]),
 		].join('\n'),

@@ -226,3 +226,37 @@ export function applyWorkspaces(
 	}
 	writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
 }
+
+/**
+ * Patch the Capawesome-generated electron config so DevTools auto-open while
+ * the desktop dev-server mode (`desktop:dev`) is active. The hook is guarded
+ * by CAPACITOR_ELECTRON_DEV_SERVER_URL, so production/packaged builds are
+ * unaffected. Idempotent; user-customized configs (existing `hooks` block)
+ * are left untouched. Returns true when the hook is present afterwards.
+ */
+export function ensureElectronDevToolsHook(appRoot: string): boolean {
+	const cfgPath = join(appRoot, 'electron', 'capacitor.electron.config.ts')
+	if (!existsSync(cfgPath)) return false
+	const original = readFileSync(cfgPath, 'utf8')
+	if (/onWindowCreated/.test(original)) return true
+	if (/hooks\s*:/.test(original)) return false
+	const closer = original.lastIndexOf('});')
+	if (closer === -1) return false
+	// 2-space indentation matches the platform generator's own output.
+	const snippet = [
+		'  hooks: {',
+		'    onWindowCreated: win => {',
+		'      // Auto-open DevTools during desktop dev (ionic-everywhere).',
+		'      if (process.env.CAPACITOR_ELECTRON_DEV_SERVER_URL) {',
+		"        win.webContents.openDevTools({mode: 'detach'})",
+		'      }',
+		'    },',
+		'  },',
+		'',
+	].join('\n')
+	writeFileSync(
+		cfgPath,
+		`${original.slice(0, closer)}${snippet}${original.slice(closer)}`,
+	)
+	return true
+}

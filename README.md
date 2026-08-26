@@ -107,7 +107,7 @@ See [AGENTS.md](AGENTS.md) for contribution conventions and known pitfalls.
 ## Roadmap
 
 - [ ] Publish `@involvex/ionic-everywhere` (+ create-* shim) to npm
-- [ ] Live-reload desktop dev (`vite` + Capacitor serveMode)
+- [x] Live-reload desktop dev (`desktop:dev` - vite + Electron, DevTools auto-open)
 - [x] Icon/splash generation in scaffold (`assets` script + placeholders)
 - [x] PWA out of the box (web manifest + auto-update service worker)
 - [x] `ionic-everywhere add <android|desktop>` for existing projects
