@@ -32,6 +32,7 @@ export interface NewOptions {
 	git: boolean
 	tests?: boolean
 	keepOnFailure?: boolean
+	template?: string
 	yes: boolean
 }
 
@@ -47,6 +48,7 @@ interface ResolvedConfig {
 	electron: boolean
 	git: boolean
 	tests: boolean
+	templateVariant: string
 }
 
 function die(msg: string): never {
@@ -261,6 +263,7 @@ export async function resolveConfig(
 		electron: opts.electron,
 		git: git ?? true,
 		tests: tests ?? false,
+		templateVariant: opts.template === 'minimal' ? 'minimal' : 'default',
 	}
 }
 

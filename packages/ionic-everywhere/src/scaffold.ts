@@ -23,6 +23,8 @@ export interface ScaffoldOptions {
 	electron?: boolean
 	/** Opt-in Vitest testing scaffold (FEAT-012). */
 	tests?: boolean
+	/** Template variant ('default' / 'full' or 'minimal'). */
+	templateVariant?: string
 }
 
 export const MANIFEST_NAME = '.ionic-everywhere.json'
@@ -62,13 +64,9 @@ const TEST_SCRIPTS: Record<string, string> = {
 	'test:watch': 'vitest',
 }
 
-export function templateDir(): string {
-	return join(
-		dirname(fileURLToPath(import.meta.url)),
-		'..',
-		'templates',
-		'default',
-	)
+export function templateDir(variant = 'default'): string {
+	const dir = variant === 'minimal' ? 'minimal' : 'default'
+	return join(dirname(fileURLToPath(import.meta.url)), '..', 'templates', dir)
 }
 
 const BINARY_EXTS = new Set([
@@ -252,7 +250,7 @@ export function writeGeneratorManifest(opts: ScaffoldOptions): void {
 
 export function scaffold(opts: ScaffoldOptions): string[] {
 	assertEmptyTarget(opts.targetDir)
-	cpSync(templateDir(), opts.targetDir, {recursive: true})
+	cpSync(templateDir(opts.templateVariant), opts.targetDir, {recursive: true})
 	const written = tokenizeCopiedTree(opts.targetDir, opts)
 	const pkgPath = join(opts.targetDir, 'package.json')
 	if (opts.pm && opts.pm !== 'npm' && existsSync(pkgPath)) {

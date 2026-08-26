@@ -42,11 +42,17 @@ afterAll(() => {
 
 describe('templateDir', () => {
 	it('points at an existing template with expected files', () => {
-		const dir = templateDir()
+		const dir = templateDir('default')
 		expect(existsSync(join(dir, 'package.json'))).toBe(true)
 		expect(existsSync(join(dir, 'capacitor.config.ts'))).toBe(true)
 		expect(existsSync(join(dir, 'src', 'App.tsx'))).toBe(true)
 		expect(existsSync(join(dir, '.gitignore'))).toBe(true)
+	})
+
+	it('points at the minimal template variant', () => {
+		const dir = templateDir('minimal')
+		expect(existsSync(join(dir, 'package.json'))).toBe(true)
+		expect(existsSync(join(dir, 'src', 'nav.ts'))).toBe(true)
 	})
 })
 

@@ -1,0 +1,8 @@
+:root {
+}
+
+@media (min-width: 992px) {
+	ion-tab-bar {
+		display: none;
+	}
+}

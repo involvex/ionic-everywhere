@@ -110,6 +110,8 @@ async function main(): Promise<number> {
 				git: flags.git !== false,
 				tests: flags.tests === true,
 				keepOnFailure: flags['keep-on-failure'] === true,
+				template:
+					typeof flags.template === 'string' ? flags.template : undefined,
 				yes: flags.yes === true,
 			}
 			return runNew(opts)
