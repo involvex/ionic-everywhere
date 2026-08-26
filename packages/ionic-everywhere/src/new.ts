@@ -9,6 +9,7 @@ import {SCAFFOLD_LOG, step} from './step'
 import {
 	deriveAppId,
 	detectPm,
+	isInteractive,
 	isValidAppId,
 	isValidPm,
 	isXmlSafeAppName,
@@ -148,8 +149,29 @@ const clackPrompts: PromptAdapter = {
 export async function resolveConfig(
 	opts: NewOptions,
 	prompts: PromptAdapter = clackPrompts,
+	interactive: boolean = isInteractive(),
 ): Promise<ResolvedConfig> {
 	let targetDir = opts.targetDir ?? ''
+	// FEAT-021: a non-TTY shell cannot answer prompts. Fail fast with the
+	// exact flags to pass (or --yes) instead of hanging like `ionic start`.
+	if (!opts.yes && !interactive) {
+		if (!targetDir)
+			die('No target directory given. Usage: ionic-everywhere new <dir>')
+		const hints: string[] = []
+		if (!opts.appName) hints.push('  --name "<display name>"')
+		if (!opts.appId) hints.push('  --app-id com.example.myapp')
+		if (!opts.pm) hints.push('  --pm <bun|npm|pnpm|yarn>')
+		if (hints.length > 0) {
+			die(
+				[
+					'Non-interactive shell detected - prompts are unavailable.',
+					'Re-run with --yes to accept defaults, or supply:',
+					...hints,
+				].join('\n'),
+			)
+		}
+		p.log.warn('Non-interactive shell detected; skipping prompts.')
+	}
 	if (!targetDir && !opts.yes) {
 		targetDir = (
 			await prompts.text('Where should the project be created?', {
@@ -177,7 +199,7 @@ export async function resolveConfig(
 	let git = opts.git
 	let tests = opts.tests
 
-	if (!opts.yes) {
+	if (!opts.yes && interactive) {
 		if (!appName) {
 			const title = toTitle(kebabDefault)
 			appName =
@@ -245,6 +267,7 @@ export async function resolveConfig(
 export async function runNew(
 	opts: NewOptions,
 	prompts: PromptAdapter = clackPrompts,
+	interactive: boolean = isInteractive(),
 ): Promise<number> {
 	const findings = validateNewOptions(opts)
 	for (const f of findings.filter(f => f.fatal)) die(f.message)
@@ -254,7 +277,7 @@ export async function runNew(
 	if (findings.some(f => f.field === 'appName' && !f.fatal))
 		opts = {...opts, appName: undefined}
 
-	const cfg = await resolveConfig(opts)
+	const cfg = await resolveConfig(opts, prompts, interactive)
 
 	/**
 	 * Offer to remove a half-scaffolded target after any post-copy failure.
@@ -271,10 +294,10 @@ export async function runNew(
 		}
 		let remove = true
 		if (!opts.yes) {
-			remove = await prompts.confirm(
-				'Remove the partially created project?',
-				true,
-			)
+			// FEAT-021: never auto-delete without an answerable prompt.
+			remove = interactive
+				? await prompts.confirm('Remove the partially created project?', true)
+				: false
 		}
 		if (remove) {
 			rmSync(cfg.targetDir, {recursive: true, force: true})

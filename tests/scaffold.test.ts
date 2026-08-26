@@ -21,6 +21,8 @@ import {
 	applyRunner,
 	applyTokens,
 	applyWorkspaces,
+	generatorVersion,
+	MANIFEST_NAME,
 	scaffold,
 	templateDir,
 	tokenizeCopiedTree,
@@ -62,6 +64,25 @@ describe('applyTokens', () => {
 		expect(out).toContain('Cool App')
 		expect(out).toContain('io.involvex.cool')
 		expect(out).not.toContain('__APP')
+	})
+
+	it('replaces the PM token, defaulting to npm (FEAT-024)', () => {
+		const template = '__APP_PM__ run dev'
+		expect(
+			applyTokens(template, {
+				appName: 'A',
+				appId: 'io.x.a',
+				nameKebab: 'a',
+				pm: 'bun',
+			}),
+		).toBe('bun run dev')
+		expect(
+			applyTokens(template, {
+				appName: 'A',
+				appId: 'io.x.a',
+				nameKebab: 'a',
+			}),
+		).toBe('npm run dev')
 	})
 })
 
@@ -452,5 +473,99 @@ describe('tokenizeCopiedTree (FEAT-011)', () => {
 			expect(written).toContain(file)
 			expect(readFileSync(join(target, file), 'utf8')).not.toContain('__APP_')
 		}
+	})
+})
+
+describe('generator manifest (FEAT-022)', () => {
+	it('records schema, generator version and scaffold options', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Manifest App',
+			appId: 'io.involvex.manifest',
+			nameKebab: 'manifest-app',
+			pm: 'bun',
+			tests: true,
+		})
+		const raw = readFileSync(join(target, MANIFEST_NAME), 'utf8')
+		const manifest = JSON.parse(raw) as {
+			schema: number
+			generator: string
+			generatorVersion: string
+			createdAt: string
+			options: Record<string, unknown>
+		}
+		expect(manifest.schema).toBe(1)
+		expect(manifest.generator).toBe('@involvex/ionic-everywhere')
+		expect(manifest.generatorVersion).toBe(generatorVersion())
+		expect(Number.isNaN(Date.parse(manifest.createdAt))).toBe(false)
+		expect(manifest.options).toMatchObject({
+			appName: 'Manifest App',
+			appId: 'io.involvex.manifest',
+			nameKebab: 'manifest-app',
+			pm: 'bun',
+			tests: true,
+		})
+	})
+
+	it('defaults platforms to both when not specified', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'D App',
+			appId: 'io.x.d',
+			nameKebab: 'd',
+		})
+		const {options} = JSON.parse(
+			readFileSync(join(target, MANIFEST_NAME), 'utf8'),
+		) as {options: Record<string, unknown>}
+		expect(options).toMatchObject({
+			pm: 'npm',
+			android: true,
+			electron: true,
+			tests: false,
+		})
+	})
+
+	it('records pruned platforms as false (FEAT-013 rollback safety)', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Web Only',
+			appId: 'io.x.webonly',
+			nameKebab: 'web-only',
+			android: false,
+			electron: false,
+		})
+		const {options} = JSON.parse(
+			readFileSync(join(target, MANIFEST_NAME), 'utf8'),
+		) as {options: Record<string, unknown>}
+		expect(options.android).toBe(false)
+		expect(options.electron).toBe(false)
+	})
+})
+
+describe('README + editor scaffolding (FEAT-024 / FEAT-026)', () => {
+	it('template ships VS Code extension recommendations', () => {
+		const recs = JSON.parse(
+			readFileSync(join(templateDir(), '.vscode', 'extensions.json'), 'utf8'),
+		) as {recommendations: string[]}
+		expect(recs.recommendations).toContain('esbenp.prettier-vscode')
+		expect(recs.recommendations).toContain('dbaeumer.vscode-eslint')
+	})
+
+	it('generated README names the chosen package manager', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Readme App',
+			appId: 'io.x.readme',
+			nameKebab: 'readme-app',
+			pm: 'pnpm',
+		})
+		const readme = readFileSync(join(target, 'README.md'), 'utf8')
+		expect(readme).toContain('pnpm run assets')
+		expect(readme).not.toContain('<pm>')
+		expect(readme).not.toContain('__APP_PM__')
 	})
 })

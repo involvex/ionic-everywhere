@@ -3,6 +3,11 @@
 Cross-platform app scaffolded with [@involvex/ionic-everywhere](https://github.com/involvex/ionic-everywhere).
 One responsive Ionic React codebase building **Web**, **Android** and **Desktop**.
 
+All command examples below use `__APP_PM__` — the package manager you chose
+during scaffolding (scripts in `package.json` were rewritten to match). The
+generator also left a `.ionic-everywhere.json` manifest recording your scaffold
+options; keep it in version control.
+
 ## Scripts
 
 | Command                   | What it does                                         |
@@ -35,7 +40,7 @@ short name and theme come from your scaffold answers — tweak them in
 
 Source images live in `assets/` (`icon-only.png`, `icon-foreground.png`,
 `icon-background.png`, `splash.png`, `splash-dark.png`). Replace them with your
-artwork (1024px icons, 2732px splashes) and run `<pm> run assets` to regenerate
+artwork (1024px icons, 2732px splashes) and run `__APP_PM__ run assets` to regenerate
 Android launcher icons. PWA icons in `public/icons/` are served as-is — replace
 those too (192px + 512px, plus a maskable 512px).
 

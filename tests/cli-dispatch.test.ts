@@ -104,7 +104,7 @@ describe('resolveConfig precedence', () => {
 				return false
 			},
 		}
-		const cfg = await resolveConfig({...base}, prompts)
+		const cfg = await resolveConfig({...base}, prompts, true)
 		expect(
 			cfg.targetDir.endsWith('asked-dir') || cfg.dirName === 'asked-dir',
 		).toBe(true)
@@ -125,7 +125,11 @@ describe('resolveConfig precedence', () => {
 			select: async () => 'bun',
 			confirm: async () => true,
 		}
-		const cfg = await resolveConfig({targetDir: 'my_app', ...base}, prompts)
+		const cfg = await resolveConfig(
+			{targetDir: 'my_app', ...base},
+			prompts,
+			true,
+		)
 		expect(cfg.nameKebab).toBe('my-app')
 		expect(cfg.appName).toBe('My App')
 		expect(cfg.appId).toBe('io.involvex.my.app')

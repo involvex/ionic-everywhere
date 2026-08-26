@@ -62,7 +62,11 @@ function fakePrompts(
 describe('runNew failure rollback (FEAT-013)', () => {
 	it('auto-removes the partial project under --yes', async () => {
 		const target = makeTemp()
-		const code = await runNew({...base, targetDir: target}, fakePrompts(true))
+		const code = await runNew(
+			{...base, targetDir: target},
+			fakePrompts(true),
+			true,
+		)
 		expect(code).toBe(1)
 		expect(stepCalls.length).toBeGreaterThan(0)
 		expect(existsSync(target)).toBe(false)
@@ -73,6 +77,7 @@ describe('runNew failure rollback (FEAT-013)', () => {
 		const code = await runNew(
 			{...base, targetDir: target, keepOnFailure: true},
 			fakePrompts(true),
+			true,
 		)
 		expect(code).toBe(1)
 		expect(existsSync(target)).toBe(true)
@@ -84,6 +89,7 @@ describe('runNew failure rollback (FEAT-013)', () => {
 		const code = await runNew(
 			{...base, targetDir: target, yes: false},
 			fakePrompts(false, confirms),
+			true,
 		)
 		expect(code).toBe(1)
 		expect(
@@ -98,6 +104,7 @@ describe('runNew failure rollback (FEAT-013)', () => {
 		const code = await runNew(
 			{...base, targetDir: target, yes: false},
 			fakePrompts(true, confirms),
+			true,
 		)
 		expect(code).toBe(1)
 		expect(confirms.length).toBeGreaterThan(0)

@@ -17,8 +17,32 @@ export interface ScaffoldOptions {
 	appId: string
 	nameKebab: string
 	pm?: string
+	/** Include the Android platform (recorded in the generator manifest). */
+	android?: boolean
+	/** Include the desktop platform (recorded in the generator manifest). */
+	electron?: boolean
 	/** Opt-in Vitest testing scaffold (FEAT-012). */
 	tests?: boolean
+}
+
+export const MANIFEST_NAME = '.ionic-everywhere.json'
+
+/**
+ * Version of the CLI package itself, recorded in every generated project's
+ * manifest (FEAT-022) so future tooling can detect which template produced it.
+ */
+export function generatorVersion(): string {
+	try {
+		const pkg = JSON.parse(
+			readFileSync(
+				join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'),
+				'utf8',
+			),
+		) as {version?: string}
+		return pkg.version ?? '0.0.0'
+	} catch {
+		return '0.0.0'
+	}
 }
 
 /**
@@ -78,12 +102,13 @@ const TOKEN_PATTERN = /__APP_[A-Z_]+__/
 
 export function applyTokens(
 	content: string,
-	opts: Pick<ScaffoldOptions, 'appName' | 'appId' | 'nameKebab'>,
+	opts: Pick<ScaffoldOptions, 'appName' | 'appId' | 'nameKebab' | 'pm'>,
 ): string {
 	return content
 		.replaceAll('__APP_NAME__', opts.appName)
 		.replaceAll('__APP_ID__', opts.appId)
 		.replaceAll('__APP_NAME_KEBAB__', opts.nameKebab)
+		.replaceAll('__APP_PM__', opts.pm ?? 'npm')
 }
 
 const PM_DLX: Partial<Record<string, string>> = {
@@ -130,7 +155,7 @@ function walkFiles(root: string): string[] {
  */
 export function tokenizeCopiedTree(
 	targetDir: string,
-	opts: Pick<ScaffoldOptions, 'appName' | 'appId' | 'nameKebab'>,
+	opts: Pick<ScaffoldOptions, 'appName' | 'appId' | 'nameKebab' | 'pm'>,
 ): string[] {
 	const written: string[] = []
 	for (const path of walkFiles(targetDir)) {
@@ -190,6 +215,33 @@ export function applyTestingScaffold(
 	writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
 }
 
+/**
+ * Record how (and by what) this project was generated (FEAT-022). Written
+ * last so it reflects the final state after script rewriting and testing-
+ * scaffold pruning. `schema` lets future upgrade tooling evolve the shape.
+ */
+export function writeGeneratorManifest(opts: ScaffoldOptions): void {
+	const manifest = {
+		schema: 1,
+		generator: '@involvex/ionic-everywhere',
+		generatorVersion: generatorVersion(),
+		createdAt: new Date().toISOString(),
+		options: {
+			appName: opts.appName,
+			appId: opts.appId,
+			nameKebab: opts.nameKebab,
+			pm: opts.pm ?? 'npm',
+			android: opts.android ?? true,
+			electron: opts.electron ?? true,
+			tests: opts.tests ?? false,
+		},
+	}
+	writeFileSync(
+		join(opts.targetDir, MANIFEST_NAME),
+		`${JSON.stringify(manifest, null, 2)}\n`,
+	)
+}
+
 export function scaffold(opts: ScaffoldOptions): string[] {
 	assertEmptyTarget(opts.targetDir)
 	cpSync(templateDir(), opts.targetDir, {recursive: true})
@@ -203,6 +255,7 @@ export function scaffold(opts: ScaffoldOptions): string[] {
 		writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
 	}
 	applyTestingScaffold(opts.targetDir, pkgPath, opts.tests, opts.pm)
+	writeGeneratorManifest(opts)
 	return written
 }
 

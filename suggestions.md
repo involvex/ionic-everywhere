@@ -21,6 +21,12 @@
 >
 > Remaining open: none from this round. Deferred: FEAT-008, 014, 016, 020
 > (see "Deferred"). FEAT-009 shipped on 2026-08-26 (see "Done this round").
+>
+> **Status update (2026-08-26, round 2):** Backlog refreshed by a second
+> codebase analysis pass — 10 new items added (FEAT-021…031, none duplicating
+> landed work). Phase A quick wins (FEAT-021, 022, 024, 026, 028) scheduled for
+> immediate implementation; medium tier slots in opportunistically; high tier
+> sequenced as Phases B–D below.
 
 ## Executive summary
 
@@ -66,6 +72,41 @@ output produced by `cli:test`.
 
 ---
 
+## Proposed backlog — round 2 (2026-08-26)
+
+New items from the second analysis pass, tiered by effort/impact. None
+duplicate landed work; FEAT-008/016/020 are carried forward into the tiers.
+
+### Tier 1 — Quick wins (Phase A, immediate)
+
+| ID       | Item                             | Why it matters                                                                                                                                                                                                                                                                                                                                       | Touchpoints                                                                                                   |
+| -------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| FEAT-021 | Non-TTY guard                    | Same failure mode that killed `ionic start` (NOTES #1): with stdin not a TTY and required info missing, prompts would block. Die instead with an actionable flags list. `add` needs no guard (it never prompts). Non-interactive failure-cleanup defaults to **keep** the partial project + log path (never auto-delete user data without a prompt). | `src/util.ts` (`isInteractive()`), `src/new.ts` (`resolveConfig` 3rd param), tests in `new-config`/`rollback` |
+| FEAT-022 | Generator manifest               | Write `.ionic-everywhere.json` into every generated app: `{"schema":1,"generator","generatorVersion","createdAt","options":{pm,appId,nameKebab,android,electron,tests}}`. Prerequisite for FEAT-029 `upgrade`; support diagnostics today.                                                                                                            | `src/scaffold.ts` (+`ScaffoldOptions` gains pm/android/electron/tests), `tests/scaffold.test.ts`              |
+| FEAT-024 | README PM tokenization           | Generated README hardcodes generic `<pm>` placeholders while scripts are rewritten by `applyRunner`. Add an `__APP_PM__` token (fits the existing `/__APP_[A-Z_]+__/` pattern — zero regex change). Platform-row hiding deferred to FEAT-008.                                                                                                        | `templates/default/README.md`, `applyTokens()` in `src/scaffold.ts`                                           |
+| FEAT-026 | Template VS Code recommendations | One file: `.vscode/extensions.json` recommending ESLint + Prettier. Verify template `.gitignore` doesn't exclude `.vscode/`.                                                                                                                                                                                                                         | `templates/default/.vscode/extensions.json`                                                                   |
+| FEAT-028 | `add` walk-up project discovery  | Currently requires exact cwd = project root. Walk up parents until `capacitor.config.ts` found; skipped when `--dir` is passed explicitly (respect user intent). Pure, testable `findProjectRoot()`.                                                                                                                                                 | `src/add.ts`, new `tests/find-root.test.ts`                                                                   |
+
+### Tier 2 — Medium (opportunistic backlog)
+
+| ID       | Item                         | Why it matters                                                                                                                               | Notes                                                          |
+| -------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| FEAT-023 | Project-aware doctor         | Inside a generated app, append: installed @ionic/react + @capacitor/* versions, missing platform dirs, script drift vs canonical registry.   | Reuses `platform-scripts.ts` data; injectable for tests        |
+| FEAT-025 | Android hardware back-button | Real UX gap: wire `@capacitor/app` back-button → router history back, exit-confirm on root route.                                            | Template dep addition → reference-app verify first (gotcha #7) |
+| FEAT-027 | CI web-build of demo app     | `scaffold-smoke` asserts structure only; actually building the scaffolded app catches dependency-drift incidents early (NOTES #9/#11 class). | Extend `scripts/cli-test.mjs` or ci.yml; cheapest CI hardening |
+| FEAT-031 | Update notifier              | Cached daily npm-version check on CLI startup; opt-out env var; injectable fetch for tests.                                                  | Standard CLI hygiene; keep quiet when offline                  |
+
+### Tier 3 — High tier (Phases B–D)
+
+| ID              | Item                      | Why it matters                                                                                                                                                                                                               | Dependencies                                 |
+| --------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| FEAT-029        | `upgrade` command         | Biggest user-facing value for existing projects: re-sync scripts from the canonical registry, re-inject devtools hook (both already idempotent helpers), copy-if-missing new template files, drift report on modified files. | Depends on FEAT-022 manifest (`"schema":1`)  |
+| FEAT-008 (+020) | Template variants         | Data-driven nav model first (single source drives AppMenu + tabs + routes); variant overlays afterwards. Absorbs FEAT-020 polish and FEAT-024's platform-row hiding.                                                         | Existing deferred item                       |
+| FEAT-030        | Release/signing helper    | Keystore generation guidance, env-var-guarded gradle signing config, `build:android:release` script + docs.                                                                                                                  | Reference-app verified before template port  |
+| FEAT-016        | npm publish w/ provenance | First-release pipeline.                                                                                                                                                                                                      | Still blocked on npm trusted-publisher setup |
+
+---
+
 ## Done previously (verified against source on 2026-08-26)
 
 | ID       | Summary                          | Evidence                                                                                                              |
@@ -89,7 +130,16 @@ AGENTS.md #9).
 - Electron workspace injection ordering (workspaces pointer only after `cap add`,
   then reinstall) — implemented per gotcha #8 and asserted in `scripts/cli-test.mjs`.
 
-## Suggested next-round sequencing
+## Round-2 sequencing
 
-1. FEAT-008 template variants (data-driven nav first), folding in FEAT-020 polish.
-2. FEAT-016 publish pipeline once npm trusted publishing is configured.
+1. **Phase A (now):** quick wins FEAT-021 → 022 → 024 → 026 → 028 (all
+   CLI/template-side, zero new deps), then verification gates: `bun run verify`,
+   `bun run build`, `bun run cli:test`, fresh QA scaffold asserting manifest +
+   tokenized README + `.vscode/`, non-TTY pipe check.
+2. **Phase B:** FEAT-029 `upgrade` — design manifest schema v1 so the upgrade
+   path can rely on it from day one.
+3. **Phase C:** FEAT-008 variants (data-driven nav first, folding in FEAT-020).
+4. **Phase D:** FEAT-016 publish pipeline once npm trusted publishing is
+   configured; FEAT-030 signing helper after a reference-app keystore run.
+5. Medium tier (FEAT-023, 025, 027, 031) slots into any gap; FEAT-027 is the
+   cheapest standalone win if CI flakes first.

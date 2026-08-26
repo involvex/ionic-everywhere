@@ -1,6 +1,6 @@
 import * as p from '@clack/prompts'
 import {existsSync} from 'node:fs'
-import {isAbsolute, join, resolve} from 'node:path'
+import {dirname, isAbsolute, join, resolve} from 'node:path'
 import {CAP_PLATFORM_NAMES, syncPlatformScripts} from './platform-scripts'
 import {applyWorkspaces, ensureElectronDevToolsHook} from './scaffold'
 import {step} from './step'
@@ -36,6 +36,21 @@ export function normalizePlatformArg(value?: string): PlatformKey | undefined {
 	return undefined
 }
 
+/**
+ * Walk up from startDir until a capacitor.config.ts marker is found
+ * (FEAT-028). Returns undefined at the filesystem root. Explicit --dir
+ * values skip this walk — the caller decided where the project lives.
+ */
+export function findProjectRoot(startDir: string): string | undefined {
+	let current = resolve(startDir)
+	for (;;) {
+		if (existsSync(join(current, 'capacitor.config.ts'))) return current
+		const parent = dirname(current)
+		if (parent === current) return undefined
+		current = parent
+	}
+}
+
 function die(msg: string): never {
 	p.log.error(msg)
 	process.exit(1)
@@ -53,8 +68,21 @@ export async function runAdd(opts: AddOptions): Promise<number> {
 	}
 	const pm = opts.pm ?? detectPm()
 
-	let dir = opts.projectDir ?? '.'
-	dir = isAbsolute(dir) ? dir : resolve(process.cwd(), dir)
+	let dir: string
+	if (opts.projectDir !== undefined) {
+		dir = isAbsolute(opts.projectDir)
+			? opts.projectDir
+			: resolve(process.cwd(), opts.projectDir)
+	} else {
+		const found = findProjectRoot(process.cwd())
+		if (!found) {
+			die(
+				'No capacitor.config.ts found in this directory or any parent. Run inside an ionic-everywhere project or pass --dir <path>.',
+			)
+		}
+		dir = found
+		if (dir !== process.cwd()) p.log.info(`Found project root: ${dir}`)
+	}
 	const pkgPath = join(dir, 'package.json')
 	if (!existsSync(pkgPath)) {
 		die(`No package.json in ${dir}. Run inside an ionic-everywhere project.`)

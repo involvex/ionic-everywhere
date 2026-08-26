@@ -40,6 +40,17 @@ export const VALID_PMS = ['bun', 'npm', 'pnpm', 'yarn'] as const
 
 export type ValidPm = (typeof VALID_PMS)[number]
 
+/**
+ * True when the CLI can show prompts. Injectable streams keep this pure and
+ * testable; production callers use the defaults.
+ */
+export function isInteractive(
+	stdin: {isTTY?: boolean} = process.stdin,
+	stdout: {isTTY?: boolean} = process.stdout,
+): boolean {
+	return Boolean(stdin?.isTTY) && Boolean(stdout?.isTTY)
+}
+
 export function isValidPm(pm: string): pm is ValidPm {
 	return (VALID_PMS as readonly string[]).includes(pm)
 }
