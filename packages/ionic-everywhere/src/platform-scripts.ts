@@ -67,18 +67,18 @@ function writePkg(pkgPath: string, pkg: unknown): void {
 }
 
 /**
- * Make the project's scripts match the desired platform set: platform-owned
- * keys are added/restored from the registry, removed keys are dropped, and
- * sync/build:all are rebuilt. Unrelated scripts pass through untouched.
+ * Pure projection of what syncPlatformScripts() WOULD write: platform-owned
+ * keys added/restored from the registry, removed keys dropped, sync/build:all
+ * rebuilt, then runner-flavored. FEAT-029's planner diffs against this to
+ * report drift without touching disk.
  */
-export function syncPlatformScripts(
-	pkgPath: string,
+export function computeSyncedScripts(
+	current: Record<string, string>,
 	android: boolean,
 	electron: boolean,
 	pm = 'npm',
-): void {
-	const pkg = readPkg(pkgPath)
-	const scripts = {...(pkg.scripts ?? {})}
+): Record<string, string> {
+	const scripts = {...current}
 	const desired: Record<string, string> = {}
 	if (android)
 		for (const key of ANDROID_KEYS) desired[key] = CANONICAL_SCRIPTS[key]
@@ -92,7 +92,22 @@ export function syncPlatformScripts(
 	const buildAll = buildBuildAllScript(android, electron)
 	if (buildAll) scripts['build:all'] = buildAll
 	else delete scripts['build:all']
-	pkg.scripts = applyRunner(scripts, pm)
+	return applyRunner(scripts, pm)
+}
+
+/**
+ * Make the project's scripts match the desired platform set: platform-owned
+ * keys are added/restored from the registry, removed keys are dropped, and
+ * sync/build:all are rebuilt. Unrelated scripts pass through untouched.
+ */
+export function syncPlatformScripts(
+	pkgPath: string,
+	android: boolean,
+	electron: boolean,
+	pm = 'npm',
+): void {
+	const pkg = readPkg(pkgPath)
+	pkg.scripts = computeSyncedScripts(pkg.scripts ?? {}, android, electron, pm)
 	writePkg(pkgPath, pkg)
 }
 

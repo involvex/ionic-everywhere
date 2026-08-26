@@ -135,17 +135,25 @@ export function applyRunner(
 	return result
 }
 
+/** Directory names never walked by the scanners below. */
+const SKIP_DIRS = new Set(['.git', 'node_modules'])
+
 function walkFiles(root: string): string[] {
 	const out: string[] = []
 	const visit = (dir: string): void => {
 		for (const entry of readdirSync(dir, {withFileTypes: true})) {
 			const full = join(dir, entry.name)
-			if (entry.isDirectory()) visit(full)
-			else if (entry.isFile()) out.push(full)
+			if (entry.isDirectory()) {
+				if (!SKIP_DIRS.has(entry.name)) visit(full)
+			} else if (entry.isFile()) out.push(full)
 		}
 	}
 	visit(root)
 	return out
+}
+
+function toPosix(p: string): string {
+	return p.split('\\').join('/')
 }
 
 /**
@@ -281,6 +289,22 @@ export function applyWorkspaces(
 }
 
 /**
+ * Pure predicate behind ensureElectronDevToolsHook() — FEAT-029's planner
+ * uses it to classify the hook without mutating anything.
+ */
+export type DevToolsHookState =
+	'missing-config' | 'present' | 'skipped-customized' | 'injectable'
+
+export function electronDevToolsHookState(appRoot: string): DevToolsHookState {
+	const cfgPath = join(appRoot, 'electron', 'capacitor.electron.config.ts')
+	if (!existsSync(cfgPath)) return 'missing-config'
+	const original = readFileSync(cfgPath, 'utf8')
+	if (/onWindowCreated/.test(original)) return 'present'
+	if (/hooks\s*:/.test(original)) return 'skipped-customized'
+	return 'injectable'
+}
+
+/**
  * Patch the Capawesome-generated electron config so DevTools auto-open while
  * the desktop dev-server mode (`desktop:dev`) is active. The hook is guarded
  * by CAPACITOR_ELECTRON_DEV_SERVER_URL, so production/packaged builds are
@@ -290,9 +314,9 @@ export function applyWorkspaces(
 export function ensureElectronDevToolsHook(appRoot: string): boolean {
 	const cfgPath = join(appRoot, 'electron', 'capacitor.electron.config.ts')
 	if (!existsSync(cfgPath)) return false
+	const state = electronDevToolsHookState(appRoot)
+	if (state !== 'injectable') return state === 'present'
 	const original = readFileSync(cfgPath, 'utf8')
-	if (/onWindowCreated/.test(original)) return true
-	if (/hooks\s*:/.test(original)) return false
 	const closer = original.lastIndexOf('});')
 	if (closer === -1) return false
 	// 2-space indentation matches the platform generator's own output.
@@ -312,4 +336,74 @@ export function ensureElectronDevToolsHook(appRoot: string): boolean {
 		`${original.slice(0, closer)}${snippet}${original.slice(closer)}`,
 	)
 	return true
+}
+
+/**
+ * Template-relative (posix) paths of template files ABSENT in targetDir —
+ * the copy-if-missing set for FEAT-029. Generator-owned and user-owned files
+ * are excluded by construction so an upgrade can never clobber or duplicate
+ * them; only additive template files ride along.
+ */
+const COPY_EXCLUSIONS = new Set([
+	MANIFEST_NAME,
+	'package.json',
+	'package-lock.json',
+	'bun.lock',
+	'capacitor.config.ts',
+	'index.html',
+	'vite.config.ts',
+	'README.md',
+])
+
+const COPY_EXCLUDED_DIRS = new Set([
+	'testing',
+	'android',
+	'electron',
+	'assets',
+	'public',
+	'.git',
+	'.vscode',
+	'node_modules',
+])
+
+export function findMissingTemplateFiles(
+	targetDir: string,
+	templateRoot: string = templateDir(),
+): string[] {
+	const missing: string[] = []
+	const visit = (dir: string, rel: string): void => {
+		for (const entry of readdirSync(dir, {withFileTypes: true})) {
+			const relPath = rel ? `${rel}/${entry.name}` : entry.name
+			if (entry.isDirectory()) {
+				if (!COPY_EXCLUDED_DIRS.has(entry.name))
+					visit(join(dir, entry.name), relPath)
+			} else if (entry.isFile()) {
+				if (COPY_EXCLUSIONS.has(relPath)) continue
+				if (!existsSync(join(targetDir, relPath)))
+					missing.push(toPosix(relPath))
+			}
+		}
+	}
+	visit(templateRoot, '')
+	return missing.sort()
+}
+
+/**
+ * Report-only FEAT-029 scan: files in the project that still contain raw
+ * `__APP_*__` tokens (evidence of interrupted tokenization). Never writes.
+ */
+export function findTokenDrift(targetDir: string): string[] {
+	const drift: string[] = []
+	for (const path of walkFiles(targetDir)) {
+		if (BINARY_EXTS.has(extname(path).toLowerCase())) continue
+		let content: string
+		try {
+			content = readFileSync(path, 'utf8')
+		} catch {
+			continue
+		}
+		if (TOKEN_PATTERN.test(content))
+			drift.push(toPosix(relative(targetDir, path)))
+	}
+	return drift.sort()
 }

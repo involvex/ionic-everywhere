@@ -39,3 +39,9 @@ Thumbs.db
 *.log
 *.tgz
 *.tar.gz
+
+# Scaffold templates: source-of-truth artifacts, not lint targets. Prettier
+# normalizes __token__ to markdown bold in .md (corrupted __APP_NAME__ once,
+# see FEAT-032) and reorders package.json keys; eslint.config.js ignores
+# templates for the same reason.
+packages/ionic-everywhere/templates

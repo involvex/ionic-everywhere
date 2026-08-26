@@ -16,6 +16,7 @@ export interface CheckInputs {
 	env?: NodeJS.ProcessEnv
 	probe?: (cmd: string) => boolean
 	javaProbe?: (javaExe: string) => number | null
+	bunVersionProbe?: () => string | null
 }
 
 // Environment probes must never hang the CLI: a stalled java.exe or a
@@ -25,6 +26,28 @@ const PROBE_TIMEOUT_MS = 3_000
 export function nodeMajor(version?: string): number | null {
 	const m = /^v(\d+)\./.exec(version ?? '')
 	return m ? Number(m[1]) : null
+}
+
+export function bunVersion(): string | null {
+	try {
+		const out = spawnSync('bun', ['--version'], {
+			encoding: 'utf8',
+			timeout: PROBE_TIMEOUT_MS,
+		})
+		if (out.error || out.status !== 0) return null
+		const text = (out.stdout ?? '').trim()
+		return text.length > 0 ? text : null
+	} catch {
+		return null
+	}
+}
+
+/**
+ * Semver prerelease detection for tool versions: anything with a hyphen
+ * suffix ("1.4.0-canary.1", "1.3.0-beta.5") is not a stable release.
+ */
+export function isPrereleaseVersion(version: string): boolean {
+	return /-/.test(version.replace(/^v/, '').trim())
 }
 
 export function javaVersion(javaExe: string): number | null {
@@ -99,6 +122,27 @@ export function runChecks(inputs: CheckInputs = {}): CheckResult[] {
 				? undefined
 				: 'Install bun (https://bun.sh) or ensure npm is on PATH',
 	})
+
+	if (hasBun) {
+		const bunVer = inputs.bunVersionProbe
+			? inputs.bunVersionProbe()
+			: bunVersion()
+		const unstable = bunVer !== null && isPrereleaseVersion(bunVer)
+		results.push({
+			name: 'bun release channel (installs)',
+			ok: !unstable,
+			required: false,
+			detail:
+				bunVer === null
+					? 'bun available (version unknown)'
+					: unstable
+						? `prerelease build ${bunVer}`
+						: `stable ${bunVer}`,
+			hint: unstable
+				? `Prerelease bun builds have produced broken installs (dropped native optional dependencies, missing transitive packages). Switch to a stable release such as 1.4.x: https://bun.sh`
+				: undefined,
+		})
+	}
 
 	const hasGit = probe('git')
 	results.push({

@@ -27,6 +27,24 @@
 > landed work). Phase A quick wins (FEAT-021, 022, 024, 026, 028) scheduled for
 > immediate implementation; medium tier slots in opportunistically; high tier
 > sequenced as Phases B–D below.
+>
+> **Status update (2026-08-26, round 3):** Source audit confirms Phase A is
+> shipped and verified in source/tests (see "Done this round"). Correction to
+> the round-2 note: FEAT-029 was marked "IN PROGRESS" but only its design
+> exists — no `src/upgrade.ts` yet; Phase B remains open. This audit added four
+> new items (FEAT-032…035), including one **P0 template bug found live**:
+> a prettier pass corrupted the README H1 token `__APP_NAME__` into markdown
+> bold (`**APP_NAME**`), so generated apps shipped a literal heading instead of
+> their name (details under FEAT-032). New Phase A′ quick-win queue:
+> FEAT-032 → 034 → 033 → 027+035; Phase B implements FEAT-029 with the three
+> drafted open decisions resolved to: apply-and-report script drift under
+> `--yes`, adopt flow enabled in v1, `--dry-run` folded into scope.
+>
+> **Close-out (2026-08-26, round 3):** Phase A′ and Phase B both shipped and
+> verified the same day — FEAT-032 (incl. `.prettierignore` guard + drift
+> tests), FEAT-033, FEAT-034, FEAT-035, FEAT-027 and FEAT-029 (`src/upgrade.ts`
+> with pure `planUpgrade`/`applyUpgrade`, adopt flow, dry-run, e2e
+> `scripts/cli-test-upgrade.mjs` wired into CI). See "Done this round".
 
 ## Executive summary
 
@@ -43,18 +61,29 @@ token replacement). Verification state at close-out: 70/70 unit tests,
 
 ## Done this round (2026-08-26)
 
-| ID       | Summary                                    | Evidence                                                                                                                                                 |
-| -------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FEAT-006 | GitHub Actions CI + manual artifacts build | `.github/workflows/ci.yml` (lint-test matrix + scaffold-smoke), `.github/workflows/artifacts.yml`                                                        |
-| FEAT-007 | Real preferences + dark mode + live List   | `templates/default/src/hooks/useStoredState.ts`; SettingsPage/ListPage/App wired; `@capacitor/preferences ^8.0.1`; `dark.class.css` imported             |
-| FEAT-009 | Live-reload desktop dev loop               | `desktop:dev` script (`scripts/desktop-dev.mjs`, zero new deps) + DevTools auto-open via injected `onWindowCreated` hook; verified live in reference-app |
-| FEAT-010 | Doctor upgrades                            | PATH java fallback + adb depth check + `--json` + non-zero exit (`allRequiredOk`); injectable `runChecks`                                                |
-| FEAT-011 | Token auto-detection                       | `tokenizeCopiedTree()` in `src/scaffold.ts`; `TEXT_FILES` removed; decoy/binary tests                                                                    |
-| FEAT-012 | Opt-in Vitest scaffold                     | `--tests` flag/prompt; staging overlay under `templates/default/testing/`; deps merged via `applyTestingScaffold()`                                      |
-| FEAT-013 | Failure rollback                           | `cleanupAfterFailure()` in `runNew`; `--keep-on-failure`; auto-yes under `--yes`; mocked-step tests                                                      |
-| FEAT-015 | `detectPm` availability probe              | Injectable probe in `src/util.ts`; bun→npm→pnpm→yarn fallback; `commandExists` moved to util                                                             |
-| FEAT-017 | Pure `applyRunner`                         | Clones input before rewriting; purity test in `tests/scaffold.test.ts`                                                                                   |
-| FEAT-018 | Dispatch/config glue tests                 | Pure `defaultAction` in `src/dispatch.ts`; injectable `resolveConfig(opts, prompts)`; `tests/cli-dispatch.test.ts`                                       |
+| ID       | Summary                                    | Evidence                                                                                                                                                                                                    |
+| -------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FEAT-006 | GitHub Actions CI + manual artifacts build | `.github/workflows/ci.yml` (lint-test matrix + scaffold-smoke), `.github/workflows/artifacts.yml`                                                                                                           |
+| FEAT-007 | Real preferences + dark mode + live List   | `templates/default/src/hooks/useStoredState.ts`; SettingsPage/ListPage/App wired; `@capacitor/preferences ^8.0.1`; `dark.class.css` imported                                                                |
+| FEAT-009 | Live-reload desktop dev loop               | `desktop:dev` script (`scripts/desktop-dev.mjs`, zero new deps) + DevTools auto-open via injected `onWindowCreated` hook; verified live in reference-app                                                    |
+| FEAT-010 | Doctor upgrades                            | PATH java fallback + adb depth check + `--json` + non-zero exit (`allRequiredOk`); injectable `runChecks`                                                                                                   |
+| FEAT-011 | Token auto-detection                       | `tokenizeCopiedTree()` in `src/scaffold.ts`; `TEXT_FILES` removed; decoy/binary tests                                                                                                                       |
+| FEAT-012 | Opt-in Vitest scaffold                     | `--tests` flag/prompt; staging overlay under `templates/default/testing/`; deps merged via `applyTestingScaffold()`                                                                                         |
+| FEAT-013 | Failure rollback                           | `cleanupAfterFailure()` in `runNew`; `--keep-on-failure`; auto-yes under `--yes`; mocked-step tests                                                                                                         |
+| FEAT-015 | `detectPm` availability probe              | Injectable probe in `src/util.ts`; bun→npm→pnpm→yarn fallback; `commandExists` moved to util                                                                                                                |
+| FEAT-017 | Pure `applyRunner`                         | Clones input before rewriting; purity test in `tests/scaffold.test.ts`                                                                                                                                      |
+| FEAT-018 | Dispatch/config glue tests                 | Pure `defaultAction` in `src/dispatch.ts`; injectable `resolveConfig(opts, prompts)`; `tests/cli-dispatch.test.ts`                                                                                          |
+| FEAT-021 | Non-TTY guard (Phase A)                    | `resolveConfig(opts, prompts, interactive)` dies with actionable flags list; failure cleanup defaults to keep without a prompt; `tests/non-interactive.test.ts`                                             |
+| FEAT-022 | Generator manifest (Phase A)               | `writeGeneratorManifest()` + `MANIFEST_NAME` in `src/scaffold.ts`; `.ionic-everywhere.json` schema 1 with pm/platform/tests options                                                                         |
+| FEAT-024 | README PM tokenization (Phase A)           | `__APP_PM__` token in template README + `applyTokens()` rewrite; FEAT-024/026 tests in `tests/scaffold.test.ts`                                                                                             |
+| FEAT-026 | Template VS Code recommendations (Phase A) | `templates/default/.vscode/extensions.json` (ESLint + Prettier)                                                                                                                                             |
+| FEAT-028 | `add` walk-up discovery (Phase A)          | `findProjectRoot()` in `src/add.ts`; explicit `--dir` skips the walk; `tests/find-root.test.ts`                                                                                                             |
+| FEAT-032 | P0 README token fix + drift guard (A′)     | `__APP_NAME__` restored in template README; `packages/ionic-everywhere/templates` in `.prettierignore`; corruption/H1 tests in `tests/scaffold.test.ts`                                                     |
+| FEAT-034 | `list` project-info command (A′)           | `src/list.ts` (`readManifest`, `formatProjectReport`); CLI case + help; `tests/list.test.ts`; e2e asserted by `cli-test.mjs`                                                                                |
+| FEAT-033 | doctor bun release-channel check (A′)      | `bunVersion()` + `isPrereleaseVersion()` in `src/doctor.ts`; injectable `bunVersionProbe`; canary warn tests                                                                                                |
+| FEAT-027 | CI web-build of demo app (A′)              | `scripts/cli-test.mjs` runs `bun run build` inside the scaffolded app                                                                                                                                       |
+| FEAT-035 | Windows scaffold-smoke (A′)                | `scaffold-smoke` matrix `[ubuntu-latest, windows-latest]`, timeout 35 min                                                                                                                                   |
+| FEAT-029 | `upgrade` command (Phase B)                | `src/upgrade.ts`: pure `planUpgrade`/`applyUpgrade`, hand-rolled semver, adopt flow, dry-run, copy-if-missing exclusions, dirty-git warn; `tests/upgrade.test.ts`; e2e `scripts/cli-test-upgrade.mjs` in CI |
 
 Also new tooling: `bun run clean` (`scripts/clean.mjs`) removes the `.test/`
 output produced by `cli:test`.
@@ -77,24 +106,26 @@ output produced by `cli:test`.
 New items from the second analysis pass, tiered by effort/impact. None
 duplicate landed work; FEAT-008/016/020 are carried forward into the tiers.
 
-### Tier 1 — Quick wins (Phase A, immediate)
+### Tier 1 — Quick wins (Phase A′, immediate)
 
-| ID       | Item                             | Why it matters                                                                                                                                                                                                                                                                                                                                       | Touchpoints                                                                                                   |
-| -------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| FEAT-021 | Non-TTY guard                    | Same failure mode that killed `ionic start` (NOTES #1): with stdin not a TTY and required info missing, prompts would block. Die instead with an actionable flags list. `add` needs no guard (it never prompts). Non-interactive failure-cleanup defaults to **keep** the partial project + log path (never auto-delete user data without a prompt). | `src/util.ts` (`isInteractive()`), `src/new.ts` (`resolveConfig` 3rd param), tests in `new-config`/`rollback` |
-| FEAT-022 | Generator manifest               | Write `.ionic-everywhere.json` into every generated app: `{"schema":1,"generator","generatorVersion","createdAt","options":{pm,appId,nameKebab,android,electron,tests}}`. Prerequisite for FEAT-029 `upgrade`; support diagnostics today.                                                                                                            | `src/scaffold.ts` (+`ScaffoldOptions` gains pm/android/electron/tests), `tests/scaffold.test.ts`              |
-| FEAT-024 | README PM tokenization           | Generated README hardcodes generic `<pm>` placeholders while scripts are rewritten by `applyRunner`. Add an `__APP_PM__` token (fits the existing `/__APP_[A-Z_]+__/` pattern — zero regex change). Platform-row hiding deferred to FEAT-008.                                                                                                        | `templates/default/README.md`, `applyTokens()` in `src/scaffold.ts`                                           |
-| FEAT-026 | Template VS Code recommendations | One file: `.vscode/extensions.json` recommending ESLint + Prettier. Verify template `.gitignore` doesn't exclude `.vscode/`.                                                                                                                                                                                                                         | `templates/default/.vscode/extensions.json`                                                                   |
-| FEAT-028 | `add` walk-up project discovery  | Currently requires exact cwd = project root. Walk up parents until `capacitor.config.ts` found; skipped when `--dir` is passed explicitly (respect user intent). Pure, testable `findProjectRoot()`.                                                                                                                                                 | `src/add.ts`, new `tests/find-root.test.ts`                                                                   |
+New items from the round-3 audit. Phase A items (FEAT-021…028) shipped — moved
+to "Done this round".
+
+| ID       | Item                                      | Why it matters                                                                                                                                                                                                                                                                                                                                                                                                                           | Touchpoints                                                                             |
+| -------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| FEAT-032 | P0: README token corruption + drift guard | `templates/default/README.md` line 1 reads `# **APP_NAME**` — a prettier pass normalized the `__APP_NAME__` token to markdown bold, so generated apps ship a literal heading instead of their name. Fix: restore the token, add `packages/ionic-everywhere/templates/` to `.prettierignore`, add drift tests (no `\*\*APP_[A-Z_]+\*\*` in any template file; scaffolded README H1 = real app name). Mirror to reference-app (gotcha #7). | template README, `.prettierignore`, `tests/scaffold.test.ts`, `reference-app/README.md` |
+| FEAT-034 | `list` project-info command               | Read `.ionic-everywhere.json` via a `findProjectRoot()` walk; print generator version, options, platform dirs present; `--json` flag; graceful messages for non-project / pre-FEAT-022 dirs. Pure reader + formatter, free companion to FEAT-023/029 diagnostics.                                                                                                                                                                        | new `src/list.ts`, `cli.ts` help+case, `tests/list.test.ts`                             |
+| FEAT-033 | doctor bun sanity check                   | NOTES #10/#11: bun canary installs break silently (dropped native optionals). Probe `bun --version` (3s timeout like other probes, injectable for tests); warn on prerelease/canary tags with hint "upgrade to stable bun ≥ 1.4.1". Skip cleanly when bun absent.                                                                                                                                                                        | `src/doctor.ts`, `tests/doctor.test.ts`                                                 |
+| FEAT-027 | CI web-build of demo app                  | `scaffold-smoke` asserts structure only; actually building the scaffolded app catches dependency-drift incidents early (NOTES #9/#11 class). Cheapest CI hardening.                                                                                                                                                                                                                                                                      | Extend `scripts/cli-test.mjs`                                                           |
+| FEAT-035 | Windows scaffold-smoke job                | `scaffold-smoke` is ubuntu-only while lint-test covers both OSes; path/PATHEXT regressions (`gradlew`, `where.exe` probes) ship undetected. Matrix `[ubuntu-latest, windows-latest]`.                                                                                                                                                                                                                                                    | `.github/workflows/ci.yml`                                                              |
 
 ### Tier 2 — Medium (opportunistic backlog)
 
-| ID       | Item                         | Why it matters                                                                                                                               | Notes                                                          |
-| -------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| FEAT-023 | Project-aware doctor         | Inside a generated app, append: installed @ionic/react + @capacitor/* versions, missing platform dirs, script drift vs canonical registry.   | Reuses `platform-scripts.ts` data; injectable for tests        |
-| FEAT-025 | Android hardware back-button | Real UX gap: wire `@capacitor/app` back-button → router history back, exit-confirm on root route.                                            | Template dep addition → reference-app verify first (gotcha #7) |
-| FEAT-027 | CI web-build of demo app     | `scaffold-smoke` asserts structure only; actually building the scaffolded app catches dependency-drift incidents early (NOTES #9/#11 class). | Extend `scripts/cli-test.mjs` or ci.yml; cheapest CI hardening |
-| FEAT-031 | Update notifier              | Cached daily npm-version check on CLI startup; opt-out env var; injectable fetch for tests.                                                  | Standard CLI hygiene; keep quiet when offline                  |
+| ID       | Item                         | Why it matters                                                                                                                             | Notes                                                          |
+| -------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| FEAT-023 | Project-aware doctor         | Inside a generated app, append: installed @ionic/react + @capacitor/* versions, missing platform dirs, script drift vs canonical registry. | Reuses `platform-scripts.ts` data; injectable for tests        |
+| FEAT-025 | Android hardware back-button | Real UX gap: wire `@capacitor/app` back-button → router history back, exit-confirm on root route.                                          | Template dep addition → reference-app verify first (gotcha #7) |
+| FEAT-031 | Update notifier              | Cached daily npm-version check on CLI startup; opt-out env var; injectable fetch for tests.                                                | Standard CLI hygiene; keep quiet when offline                  |
 
 ### Tier 3 — High tier (Phases B–D)
 
@@ -130,17 +161,20 @@ AGENTS.md #9).
 - Electron workspace injection ordering (workspaces pointer only after `cap add`,
   then reinstall) — implemented per gotcha #8 and asserted in `scripts/cli-test.mjs`.
 
-## Round-2 sequencing
+## Round-3 sequencing
 
 1. **Phase A (SHIPPED 2026-08-26, commit 1f289b6):** quick wins FEAT-021 →
    022 → 024 → 026 → 028. All verification gates passed (90/90 tests, build,
    cli:test, QA scaffold assertions, non-TTY pipe check).
-2. **Phase B (IN PROGRESS):** FEAT-029 `upgrade` — design drafted below.
-3. **Phase C:** FEAT-008 variants (data-driven nav first, folding in FEAT-020).
-4. **Phase D:** FEAT-016 publish pipeline once npm trusted publishing is
+2. **Phase A′ (SHIPPED 2026-08-26):** FEAT-032 (P0 token fix) → FEAT-034
+   (`list`) → FEAT-033 (doctor bun check) → FEAT-027+035 (CI hardening).
+3. **Phase B (SHIPPED 2026-08-26):** FEAT-029 `upgrade` — design below
+   implemented as drafted; decisions resolved: apply-and-report script drift
+   under `--yes`, adopt flow enabled in v1, `--dry-run` folded into scope.
+4. **Phase C:** FEAT-008 variants (data-driven nav first, folding in FEAT-020).
+5. **Phase D:** FEAT-016 publish pipeline once npm trusted publishing is
    configured; FEAT-030 signing helper after a reference-app keystore run.
-5. Medium tier (FEAT-023, 025, 027, 031) slots into any gap; FEAT-027 is the
-   cheapest standalone win if CI flakes first.
+6. Medium tier (FEAT-023, 025, 031) slots into any gap.
 
 ---
 
@@ -241,8 +275,8 @@ interface UpgradePlan {
 `tests/upgrade.test.ts`, `scripts/cli-test-upgrade.mjs`,
 `.github/workflows/ci.yml`, this doc. Template untouched in v1.
 
-### Open decisions (non-blocking)
+### Open decisions — RESOLVED (2026-08-26)
 
-1. Script-drift default under `--yes`: apply-and-report (recommended) vs skip.
-2. Ship adopt flow in v1 (recommended) or gate behind `--adopt`.
-3. Fold FEAT-014 `--dry-run` into FEAT-029 scope (recommended).
+1. Script-drift default under `--yes`: **apply-and-report** (confirmed).
+2. Adopt flow: **ship enabled in v1** (confirmed).
+3. FEAT-014 `--dry-run`: **folded into FEAT-029 scope** (confirmed).

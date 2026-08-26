@@ -569,3 +569,44 @@ describe('README + editor scaffolding (FEAT-024 / FEAT-026)', () => {
 		expect(readme).not.toContain('__APP_PM__')
 	})
 })
+
+describe('template token drift guard (FEAT-032)', () => {
+	function walkTemplateFiles(dir: string): string[] {
+		const out: string[] = []
+		for (const entry of readdirSync(dir, {withFileTypes: true})) {
+			const full = join(dir, entry.name)
+			if (entry.isDirectory()) out.push(...walkTemplateFiles(full))
+			else if (entry.isFile()) out.push(full)
+		}
+		return out
+	}
+
+	it('no template file contains formatter-corrupted tokens', () => {
+		// Prettier once rewrote __APP_NAME__ to markdown bold (**APP_NAME**),
+		// which tokenizeCopiedTree() no longer matched — generated apps shipped
+		// a literal heading. Templates are prettier-ignored now; this guards
+		// against any future re-corruption.
+		for (const file of walkTemplateFiles(templateDir())) {
+			const content = readFileSync(file, 'utf8')
+			expect(content).not.toMatch(/\*\*APP_[A-Z_]+\*\*/)
+		}
+	})
+
+	it('template README H1 carries the intact __APP_NAME__ token', () => {
+		const readme = readFileSync(join(templateDir(), 'README.md'), 'utf8')
+		expect(readme.startsWith('# __APP_NAME__')).toBe(true)
+	})
+
+	it('generated README heading is the real app name', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Drift App',
+			appId: 'io.x.drift',
+			nameKebab: 'drift-app',
+			pm: 'bun',
+		})
+		const readme = readFileSync(join(target, 'README.md'), 'utf8')
+		expect(readme.startsWith('# Drift App')).toBe(true)
+	})
+})

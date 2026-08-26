@@ -6,7 +6,9 @@ import {fileURLToPath} from 'node:url'
 import {runAdd, type AddOptions} from './add'
 import {defaultAction} from './dispatch'
 import {allRequiredOk, formatReport, runChecks} from './doctor'
+import {runList, type ListOptions} from './list'
 import {runNew, type NewOptions} from './new'
+import {runUpgrade, type UpgradeOptions} from './upgrade'
 import {parseFlags} from './util'
 
 const VERSION = JSON.parse(
@@ -26,6 +28,11 @@ Usage:
                                          ("electron" is accepted as an alias
                                          for "desktop")
   ionic-everywhere doctor                Check the environment
+  ionic-everywhere list                  Show generator info for the nearest
+                                         ionic-everywhere project
+  ionic-everywhere upgrade               Bring an existing project's tooling
+                                         up to the current template (scripts,
+                                         new template files, manifest)
 
 Options:
   --name <name>       Display name of the app (no & < > " ' \\, line breaks or
@@ -34,9 +41,12 @@ Options:
   --app-id <id>       Reverse-DNS application id (e.g. com.example.myapp)
   --pm <bun|npm|pnpm|yarn>
                       Package manager for the generated project
-  --dir <path>        (add) Project directory (defaults to cwd)
+  --dir <path>        (add, list, upgrade) Project directory (defaults to cwd)
   --json              (doctor) Print a machine-readable JSON report and exit
-                      non-zero when required checks fail
+                      non-zero when required checks fail; (list) print the raw
+                      generator manifest
+  --dry-run           (upgrade) Print the plan without changing anything
+  --force             (upgrade) Re-apply even when versions already match
   --no-android        Skip adding the Android platform
   --no-electron       Skip adding the desktop (Electron) platform
   --no-install        Skip dependency install and platform generation
@@ -119,6 +129,35 @@ async function main(): Promise<number> {
 				yes: flags.yes === true,
 			}
 			return runAdd(opts)
+		}
+		case 'list': {
+			if (positionals.length > 0) {
+				console.error(
+					'list takes no arguments. Usage: ionic-everywhere list [--dir <path>]',
+				)
+				return 1
+			}
+			const opts: ListOptions = {
+				projectDir: typeof flags.dir === 'string' ? flags.dir : undefined,
+				json: flags.json === true,
+			}
+			return runList(opts)
+		}
+		case 'upgrade': {
+			if (positionals.length > 0) {
+				console.error(
+					'upgrade takes no arguments. Usage: ionic-everywhere upgrade [--dir <path>]',
+				)
+				return 1
+			}
+			const opts: UpgradeOptions = {
+				projectDir: typeof flags.dir === 'string' ? flags.dir : undefined,
+				pm: typeof flags.pm === 'string' ? flags.pm : undefined,
+				dryRun: flags['dry-run'] === true,
+				force: flags.force === true,
+				yes: flags.yes === true,
+			}
+			return runUpgrade(opts)
 		}
 		default:
 			console.error(`Unknown command: ${action}\n${HELP}`)

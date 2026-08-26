@@ -88,6 +88,40 @@ if (existsSync(join(target, 'electron', 'bun.lock'))) {
 	process.exit(1)
 }
 
+// FEAT-034: exercise the `list` command end-to-end against the fresh project.
+const listed = spawnSync(
+	process.execPath,
+	['packages/ionic-everywhere/dist/cli.js', 'list', '--dir', target, '--json'],
+	{encoding: 'utf8'},
+)
+let manifest
+try {
+	manifest = JSON.parse(listed.stdout)
+} catch {
+	manifest = undefined
+}
+if (
+	listed.status !== 0 ||
+	manifest?.generator !== '@involvex/ionic-everywhere'
+) {
+	console.error(
+		`cli:test FAILED - "list --json" did not return the generator manifest: ${listed.stdout}`,
+	)
+	process.exit(1)
+}
+
+// FEAT-027: actually building the scaffolded app catches dependency-drift
+// incidents early (skipped native optionals, missing transitive packages,
+// broken hoisting) before users ever see them.
+const webBuild = spawnSync('bun', ['run', 'build'], {
+	cwd: target,
+	stdio: 'inherit',
+})
+if (webBuild.status !== 0) {
+	console.error('cli:test FAILED - web build of the scaffolded app failed')
+	process.exit(webBuild.status ?? 1)
+}
+
 console.log(
 	'cli:test OK - scaffolded web + android + desktop into .test/demo-app',
 )

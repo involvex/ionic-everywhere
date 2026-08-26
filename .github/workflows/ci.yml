@@ -29,8 +29,14 @@ jobs:
       - run: bun run build
 
   scaffold-smoke:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # FEAT-035: run on both OSes - path/PATHEXT regressions (gradlew, where.exe
+    # probes) previously shipped undetected with an ubuntu-only smoke job.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -43,6 +49,9 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       - run: bun install --frozen-lockfile
-      # End-to-end: build CLI, scaffold web+android+desktop app, assert output.
+      # End-to-end: build CLI, scaffold web+android+desktop app, assert output,
+      # then web-build the result (FEAT-027) to catch dependency drift.
       # Needs no JDK/Android SDK - `cap add android` only copies the platform.
       - run: bun scripts/cli-test.mjs
+      # FEAT-029: age a fresh scaffold, `upgrade --yes`, assert restoration.
+      - run: bun scripts/cli-test-upgrade.mjs

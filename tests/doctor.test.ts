@@ -5,6 +5,7 @@ import {afterAll, describe, expect, it} from 'vitest'
 import {
 	allRequiredOk,
 	formatReport,
+	isPrereleaseVersion,
 	javaVersion,
 	nodeMajor,
 	runChecks,
@@ -156,5 +157,70 @@ describe('runChecks injection (FEAT-010)', () => {
 				{name: 'b', ok: true, required: true, detail: ''},
 			]),
 		).toBe(false)
+	})
+})
+
+describe('bun release-channel check (FEAT-033)', () => {
+	const baseInputs = {
+		version: 'v22.1.0',
+		probe: (cmd: string) => cmd === 'bun' || cmd === 'npm',
+		env: {},
+		javaProbe: () => null,
+	}
+
+	it('warns on canary/prerelease bun builds', () => {
+		const checks = runChecks({
+			...baseInputs,
+			bunVersionProbe: () => '1.4.0-canary.1',
+		})
+		const bun = checks.find(c => c.name.startsWith('bun release channel'))
+		expect(bun?.ok).toBe(false)
+		expect(bun?.required).toBe(false)
+		expect(bun?.detail).toContain('canary')
+		expect(bun?.hint).toContain('stable')
+	})
+
+	it('passes for stable bun without a hint', () => {
+		const checks = runChecks({
+			...baseInputs,
+			bunVersionProbe: () => '1.4.1',
+		})
+		const bun = checks.find(c => c.name.startsWith('bun release channel'))
+		expect(bun?.ok).toBe(true)
+		expect(bun?.detail).toBe('stable 1.4.1')
+		expect(bun?.hint).toBeUndefined()
+	})
+
+	it('stays neutral when the version cannot be determined', () => {
+		const checks = runChecks({
+			...baseInputs,
+			bunVersionProbe: () => null,
+		})
+		const bun = checks.find(c => c.name.startsWith('bun release channel'))
+		expect(bun?.ok).toBe(true)
+		expect(bun?.detail).toContain('unknown')
+	})
+
+	it('is skipped entirely when bun is absent', () => {
+		const checks = runChecks({
+			version: 'v22.1.0',
+			probe: cmd => cmd === 'npm',
+			env: {},
+			javaProbe: () => null,
+			bunVersionProbe: () => '9.9.9-canary.0',
+		})
+		expect(
+			checks.find(c => c.name.startsWith('bun release channel')),
+		).toBeUndefined()
+	})
+})
+
+describe('isPrereleaseVersion (FEAT-033)', () => {
+	it('detects semver prerelease suffixes', () => {
+		expect(isPrereleaseVersion('1.4.0-canary.1')).toBe(true)
+		expect(isPrereleaseVersion('1.3.0-beta.5')).toBe(true)
+		expect(isPrereleaseVersion('1.0.0-rc.2')).toBe(true)
+		expect(isPrereleaseVersion('1.4.1')).toBe(false)
+		expect(isPrereleaseVersion('v1.4.1')).toBe(false)
 	})
 })

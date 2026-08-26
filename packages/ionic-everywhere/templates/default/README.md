@@ -1,4 +1,4 @@
-# **APP_NAME**
+# __APP_NAME__
 
 Cross-platform app scaffolded with [@involvex/ionic-everywhere](https://github.com/involvex/ionic-everywhere).
 One responsive Ionic React codebase building **Web**, **Android** and **Desktop**.
