@@ -28,9 +28,10 @@
 		"templates"
 	],
 	"scripts": {
-		"build": "tsc -p tsconfig.json",
+		"build": "bun build src/cli.ts --outfile=dist/cli.js --target=node --format=esm",
 		"dev": "bun run --hot src/cli.ts",
-		"prepublishOnly": "bun run build"
+		"prepublishOnly": "bun run build",
+		"typecheck": "tsc -p tsconfig.json --noEmit"
 	},
 	"dependencies": {
 		"@clack/prompts": "^1.7.0"
