@@ -1,3 +1,9 @@
+import {execFileSync} from 'node:child_process'
+
+// Environment probes must never hang the CLI: a stalled binary or a path
+// lookup wedged on AV/indexer load should read as "not available".
+const PROBE_TIMEOUT_MS = 3_000
+
 export function toKebab(input: string): string {
 	return input
 		.trim()
@@ -62,14 +68,34 @@ export function unsafeAppNameReason(name: string): string {
 		: `contains one of ${chars}`
 }
 
-export function detectPm(): 'bun' | 'npm' | 'pnpm' | 'yarn' {
+export function detectPm(
+	probe: (cmd: string) => boolean = commandExists,
+): 'bun' | 'npm' | 'pnpm' | 'yarn' {
 	if (process.env.npm_config_user_agent) {
 		const ua = process.env.npm_config_user_agent
 		if (ua.startsWith('bun')) return 'bun'
 		if (ua.startsWith('pnpm')) return 'pnpm'
 		if (ua.startsWith('yarn')) return 'yarn'
 	}
+	if (probe('bun')) return 'bun'
+	if (probe('npm')) return 'npm'
+	if (probe('pnpm')) return 'pnpm'
+	if (probe('yarn')) return 'yarn'
 	return 'bun'
+}
+
+export function commandExists(cmd: string): boolean {
+	const probe = process.platform === 'win32' ? 'where' : 'command'
+	try {
+		execFileSync(probe, process.platform === 'win32' ? [cmd] : ['-v', cmd], {
+			stdio: 'ignore',
+			shell: process.platform !== 'win32',
+			timeout: PROBE_TIMEOUT_MS,
+		})
+		return true
+	} catch {
+		return false
+	}
 }
 
 export function pmRun(pm: string): string {

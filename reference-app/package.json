@@ -29,6 +29,7 @@
 	"dependencies": {
 		"@capacitor/android": "^8.5.0",
 		"@capacitor/core": "^8.5.0",
+		"@capacitor/preferences": "^8.0.1",
 		"@capawesome/capacitor-electron": "^0.1.0",
 		"@ionic/react": "^9.0.0",
 		"@ionic/react-router": "^9.0.0",

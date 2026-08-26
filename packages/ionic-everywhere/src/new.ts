@@ -1,5 +1,5 @@
 import * as p from '@clack/prompts'
-import {existsSync} from 'node:fs'
+import {existsSync, rmSync} from 'node:fs'
 import {isAbsolute, join, resolve} from 'node:path'
 import {formatReport, runChecks} from './doctor'
 import {prunePlatformScripts} from './platform-scripts'
@@ -29,6 +29,8 @@ export interface NewOptions {
 	android: boolean
 	electron: boolean
 	git: boolean
+	tests?: boolean
+	keepOnFailure?: boolean
 	yes: boolean
 }
 
@@ -43,6 +45,7 @@ interface ResolvedConfig {
 	android: boolean
 	electron: boolean
 	git: boolean
+	tests: boolean
 }
 
 function die(msg: string): never {
@@ -96,17 +99,65 @@ function checkCancel(value: unknown): void {
 	}
 }
 
-async function resolveConfig(opts: NewOptions): Promise<ResolvedConfig> {
-	let targetDir = opts.targetDir ?? ''
-	if (!targetDir && !opts.yes) {
+export interface PromptAdapter {
+	text(
+		message: string,
+		opts?: {
+			initialValue?: string
+			placeholder?: string
+			validate?: (v: string) => string | undefined
+		},
+	): Promise<string>
+	select(
+		message: string,
+		opts: {initialValue?: string; options: {value: string; label: string}[]},
+	): Promise<string>
+	confirm(message: string, initialValue: boolean): Promise<boolean>
+}
+
+const clackPrompts: PromptAdapter = {
+	async text(message, opts) {
+		const validate = opts?.validate
 		const answer = await p.text({
-			message: 'Where should the project be created?',
-			placeholder: './my-app',
-			validate: v =>
-				!v || v.trim().length === 0 ? 'Please enter a directory' : undefined,
+			message,
+			placeholder: opts?.placeholder,
+			initialValue: opts?.initialValue,
+			validate: validate
+				? (value: string | undefined) => validate(value ?? '')
+				: undefined,
 		})
 		checkCancel(answer)
-		targetDir = String(answer)
+		return String(answer)
+	},
+	async select(message, opts) {
+		const answer = await p.select({
+			message,
+			options: opts.options,
+			initialValue: opts.initialValue,
+		})
+		checkCancel(answer)
+		return String(answer)
+	},
+	async confirm(message, initialValue) {
+		const answer = await p.confirm({message, initialValue})
+		checkCancel(answer)
+		return Boolean(answer)
+	},
+}
+
+export async function resolveConfig(
+	opts: NewOptions,
+	prompts: PromptAdapter = clackPrompts,
+): Promise<ResolvedConfig> {
+	let targetDir = opts.targetDir ?? ''
+	if (!targetDir && !opts.yes) {
+		targetDir = (
+			await prompts.text('Where should the project be created?', {
+				placeholder: './my-app',
+				validate: v =>
+					!v || v.trim().length === 0 ? 'Please enter a directory' : undefined,
+			})
+		).trim()
 	}
 	if (!targetDir)
 		die('No target directory given. Usage: ionic-everywhere new <dir>')
@@ -124,35 +175,36 @@ async function resolveConfig(opts: NewOptions): Promise<ResolvedConfig> {
 	let appId = opts.appId ?? ''
 	let pm = opts.pm ?? ''
 	let git = opts.git
+	let tests = opts.tests
 
 	if (!opts.yes) {
 		if (!appName) {
-			const answer = await p.text({
-				message: 'Display name of the app?',
-				initialValue: toTitle(kebabDefault),
-				placeholder: toTitle(kebabDefault),
-			})
-			checkCancel(answer)
-			appName = String(answer).trim() || toTitle(kebabDefault)
+			const title = toTitle(kebabDefault)
+			appName =
+				(
+					await prompts.text('Display name of the app?', {
+						initialValue: title,
+						placeholder: title,
+					})
+				).trim() || title
 		}
 		if (!appId) {
 			const derived = deriveAppId(kebabDefault)
-			const answer = await p.text({
-				message: 'Application ID (reverse-DNS)?',
-				initialValue: derived,
-				placeholder: derived,
-				validate: v =>
-					v && isValidAppId(v.trim())
-						? undefined
-						: 'Expected e.g. com.example.myapp',
-			})
-			checkCancel(answer)
-			appId = String(answer).trim() || derived
+			appId =
+				(
+					await prompts.text('Application ID (reverse-DNS)?', {
+						initialValue: derived,
+						placeholder: derived,
+						validate: v =>
+							v && isValidAppId(v.trim())
+								? undefined
+								: 'Expected e.g. com.example.myapp',
+					})
+				).trim() || derived
 		}
 		if (!pm) {
 			const detected = detectPm()
-			const answer = await p.select({
-				message: 'Package manager?',
+			pm = await prompts.select('Package manager?', {
 				initialValue: detected,
 				options: [
 					{value: 'bun', label: 'bun'},
@@ -161,16 +213,12 @@ async function resolveConfig(opts: NewOptions): Promise<ResolvedConfig> {
 					{value: 'yarn', label: 'yarn'},
 				],
 			})
-			checkCancel(answer)
-			pm = String(answer)
 		}
 		if (opts.git && git !== false) {
-			const answer = await p.confirm({
-				message: 'Initialize a git repository?',
-				initialValue: true,
-			})
-			checkCancel(answer)
-			git = Boolean(answer)
+			git = await prompts.confirm('Initialize a git repository?', true)
+		}
+		if (tests === undefined) {
+			tests = await prompts.confirm('Add a Vitest testing scaffold?', true)
 		}
 	}
 
@@ -190,10 +238,14 @@ async function resolveConfig(opts: NewOptions): Promise<ResolvedConfig> {
 		android: opts.android,
 		electron: opts.electron,
 		git: git ?? true,
+		tests: tests ?? false,
 	}
 }
 
-export async function runNew(opts: NewOptions): Promise<number> {
+export async function runNew(
+	opts: NewOptions,
+	prompts: PromptAdapter = clackPrompts,
+): Promise<number> {
 	const findings = validateNewOptions(opts)
 	for (const f of findings.filter(f => f.fatal)) die(f.message)
 	for (const f of findings) p.log.warn(f.message)
@@ -203,6 +255,36 @@ export async function runNew(opts: NewOptions): Promise<number> {
 		opts = {...opts, appName: undefined}
 
 	const cfg = await resolveConfig(opts)
+
+	/**
+	 * Offer to remove a half-scaffolded target after any post-copy failure.
+	 * Safe to delete recursively: assertEmptyTarget() guarantees the
+	 * directory was empty before the template was copied, so everything in
+	 * it was created by this run.
+	 */
+	const cleanupAfterFailure = async (): Promise<void> => {
+		if (opts.keepOnFailure) {
+			p.log.warn(
+				`Partial project kept at ${cfg.targetDir} (--keep-on-failure). Full log: ${SCAFFOLD_LOG}`,
+			)
+			return
+		}
+		let remove = true
+		if (!opts.yes) {
+			remove = await prompts.confirm(
+				'Remove the partially created project?',
+				true,
+			)
+		}
+		if (remove) {
+			rmSync(cfg.targetDir, {recursive: true, force: true})
+			p.log.message(`Removed partial project. Full log: ${SCAFFOLD_LOG}`)
+		} else {
+			p.log.warn(
+				`Partial project kept at ${cfg.targetDir}. Log: ${SCAFFOLD_LOG}`,
+			)
+		}
+	}
 
 	p.intro(`ionic-everywhere - scaffolding ${cfg.nameKebab}`)
 	p.log.info(`Target : ${cfg.targetDir}`)
@@ -263,8 +345,10 @@ export async function runNew(opts: NewOptions): Promise<number> {
 			pmInstall(cfg.pm),
 			cfg.targetDir,
 		))
-	)
+	) {
+		await cleanupAfterFailure()
 		return 1
+	}
 
 	if (cfg.android) {
 		if (
@@ -278,8 +362,10 @@ export async function runNew(opts: NewOptions): Promise<number> {
 				`${pmRun(cfg.pm)} cap add android`,
 				cfg.targetDir,
 			))
-		)
+		) {
+			await cleanupAfterFailure()
 			return 1
+		}
 	}
 
 	if (cfg.electron) {
@@ -294,8 +380,10 @@ export async function runNew(opts: NewOptions): Promise<number> {
 				`${pmRun(cfg.pm)} cap add @capawesome/capacitor-electron`,
 				cfg.targetDir,
 			))
-		)
+		) {
+			await cleanupAfterFailure()
 			return 1
+		}
 		applyWorkspaces(join(cfg.targetDir, 'package.json'), true)
 		if (
 			!(await step(
@@ -308,8 +396,10 @@ export async function runNew(opts: NewOptions): Promise<number> {
 				pmInstall(cfg.pm),
 				cfg.targetDir,
 			))
-		)
+		) {
+			await cleanupAfterFailure()
 			return 1
+		}
 	}
 
 	if (cfg.git) {

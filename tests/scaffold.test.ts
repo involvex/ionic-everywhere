@@ -1,5 +1,6 @@
 import {
 	existsSync,
+	mkdirSync,
 	mkdtempSync,
 	readdirSync,
 	readFileSync,
@@ -22,6 +23,7 @@ import {
 	applyWorkspaces,
 	scaffold,
 	templateDir,
+	tokenizeCopiedTree,
 } from '../packages/ionic-everywhere/src/scaffold'
 
 const tempDirs: string[] = []
@@ -351,5 +353,103 @@ describe('applyRunner npx rewriting (R-3)', () => {
 		expect(out.assets).toBe('bun x @capacitor/assets generate --android')
 		expect(out.chained).toBe('bun run build && bun x some-tool --flag')
 		expect(out.argument).toBe('echo npx not-a-tool')
+	})
+
+	it('does not mutate its input (FEAT-017)', () => {
+		const input = {
+			dev: 'npm run dev',
+			assets: 'npx @capacitor/assets generate',
+		}
+		const snapshot = {...input}
+		const out = applyRunner(input, 'bun')
+		expect(input).toEqual(snapshot)
+		expect(out).not.toBe(input)
+	})
+})
+
+describe('testing scaffold (FEAT-012)', () => {
+	it('enabled: moves overlay files, merges deps and scripts, removes staging', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Tested App',
+			appId: 'io.involvex.tested',
+			nameKebab: 'tested-app',
+			tests: true,
+		})
+		expect(existsSync(join(target, 'vitest.config.ts'))).toBe(true)
+		expect(existsSync(join(target, 'src', 'App.test.tsx'))).toBe(true)
+		expect(existsSync(join(target, 'testing'))).toBe(false)
+		const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+		expect(pkg.devDependencies.vitest).toMatch(/^\^4\./)
+		expect(pkg.devDependencies['@testing-library/react']).toMatch(/^\^16\./)
+		expect(pkg.devDependencies['@testing-library/dom']).toMatch(/^\^10\./)
+		expect(pkg.scripts.test).toBe('vitest run')
+		expect(pkg.scripts['test:watch']).toBe('vitest')
+	})
+
+	it('disabled (default): leaves no testing artifacts behind', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Plain App',
+			appId: 'io.involvex.plain',
+			nameKebab: 'plain-app',
+		})
+		expect(existsSync(join(target, 'vitest.config.ts'))).toBe(false)
+		expect(existsSync(join(target, 'src', 'App.test.tsx'))).toBe(false)
+		expect(existsSync(join(target, 'testing'))).toBe(false)
+		const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+		expect(pkg.devDependencies.vitest).toBeUndefined()
+		expect(pkg.scripts.test).toBeUndefined()
+	})
+})
+
+describe('tokenizeCopiedTree (FEAT-011)', () => {
+	it('rewrites token-bearing files anywhere and skips binary extensions', () => {
+		const target = makeTemp()
+		mkdirSync(join(target, 'nested'), {recursive: true})
+		writeFileSync(
+			join(target, 'nested', 'decoy.json'),
+			'{"name": "__APP_NAME_KEBAB__"}',
+		)
+		writeFileSync(
+			join(target, 'fake.bin.png'),
+			'__APP_NAME__ inside a "binary"',
+		)
+		writeFileSync(join(target, 'clean.txt'), 'no tokens here')
+		const written = tokenizeCopiedTree(target, {
+			appName: 'Decoy App',
+			appId: 'io.involvex.decoy',
+			nameKebab: 'decoy-app',
+		})
+		const normalized = written.map(p => p.replaceAll('\\', '/'))
+		expect(normalized).toContain('nested/decoy.json')
+		expect(normalized).not.toContain('fake.bin.png')
+		expect(readFileSync(join(target, 'nested', 'decoy.json'), 'utf8')).toBe(
+			'{"name": "decoy-app"}',
+		)
+		expect(readFileSync(join(target, 'fake.bin.png'), 'utf8')).toContain(
+			'__APP_NAME__',
+		)
+	})
+
+	it('scaffold() auto-tokenizes the whole copied template', () => {
+		const target = makeTemp()
+		const written = scaffold({
+			targetDir: target,
+			appName: 'Tree App',
+			appId: 'io.involvex.tree',
+			nameKebab: 'tree-app',
+		}).map(p => p.replaceAll('\\', '/'))
+		for (const file of [
+			'package.json',
+			'capacitor.config.ts',
+			'index.html',
+			'vite.config.ts',
+		]) {
+			expect(written).toContain(file)
+			expect(readFileSync(join(target, file), 'utf8')).not.toContain('__APP_')
+		}
 	})
 })

@@ -11,6 +11,7 @@
 	"scripts": {
 		"prebuild": "bun run verify",
 		"build": "bun run --filter @involvex/ionic-everywhere build",
+		"clean": "bun scripts/clean.mjs",
 		"cli:dev": "bun run --filter @involvex/ionic-everywhere dev",
 		"cli:test": "bun run build && bun scripts/cli-test.mjs",
 		"format": "prettier . --write",

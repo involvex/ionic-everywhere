@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import * as p from '@clack/prompts'
 import {readFileSync} from 'node:fs'
-import {basename, dirname, join} from 'node:path'
+import {dirname, join} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {runAdd, type AddOptions} from './add'
-import {formatReport, runChecks} from './doctor'
+import {defaultAction} from './dispatch'
+import {allRequiredOk, formatReport, runChecks} from './doctor'
 import {runNew, type NewOptions} from './new'
-import {parseFlags, toKebab} from './util'
+import {parseFlags} from './util'
 
 const VERSION = JSON.parse(
 	readFileSync(
@@ -34,10 +35,16 @@ Options:
   --pm <bun|npm|pnpm|yarn>
                       Package manager for the generated project
   --dir <path>        (add) Project directory (defaults to cwd)
+  --json              (doctor) Print a machine-readable JSON report and exit
+                      non-zero when required checks fail
   --no-android        Skip adding the Android platform
   --no-electron       Skip adding the desktop (Electron) platform
   --no-install        Skip dependency install and platform generation
   --no-git            Skip git init
+  --tests             (new) Add a Vitest testing scaffold to the generated app
+                      (interactive default: yes; --yes default: no)
+  --keep-on-failure   (new) Keep a partially created project when a setup
+                      step fails instead of offering to remove it
   --yes               Accept defaults, no prompts
   -h, --help          Show this help
   -v, --version       Show version
@@ -48,14 +55,6 @@ Examples:
   ionic-everywhere new my-app --no-electron   # web + Android only
   cd my-app && ionic-everywhere add desktop   # add Electron later
 `
-
-function defaultAction(argv: string[]): string {
-	const bin = basename(process.argv[1] ?? '').replace(/\.(c|m)?js$/, '')
-	if (toKebab(bin).startsWith('create')) return 'new'
-	const first = argv[0]
-	if (!first || first.startsWith('-')) return 'new'
-	return first
-}
 
 async function main(): Promise<number> {
 	const argv = process.argv.slice(2)
@@ -75,8 +74,13 @@ async function main(): Promise<number> {
 
 	switch (action) {
 		case 'doctor': {
-			console.log(formatReport(runChecks()))
-			return 0
+			const checks = runChecks()
+			if (flags.json === true)
+				console.log(
+					JSON.stringify({ok: allRequiredOk(checks), checks}, null, 2),
+				)
+			else console.log(formatReport(checks))
+			return allRequiredOk(checks) ? 0 : 1
 		}
 		case 'new':
 		case 'scaffold': {
@@ -94,6 +98,8 @@ async function main(): Promise<number> {
 				android: flags.android !== false,
 				electron: flags.electron !== false,
 				git: flags.git !== false,
+				tests: flags.tests === true,
+				keepOnFailure: flags['keep-on-failure'] === true,
 				yes: flags.yes === true,
 			}
 			return runNew(opts)

@@ -111,8 +111,10 @@ See [AGENTS.md](AGENTS.md) for contribution conventions and known pitfalls.
 - [x] Icon/splash generation in scaffold (`assets` script + placeholders)
 - [x] PWA out of the box (web manifest + auto-update service worker)
 - [x] `ionic-everywhere add <android|desktop>` for existing projects
+- [x] Working settings persistence (preferences + dark mode) in the template
+- [x] Opt-in Vitest testing scaffold (`--tests`)
 - [ ] Optional templates: drawer-only, tabs-only
-- [ ] GitHub Actions matrix building all targets
+- [x] GitHub Actions CI (verify/build/scaffold smoke) + manual artifacts build
 
 ## License
 

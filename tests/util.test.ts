@@ -78,8 +78,21 @@ describe('parseFlags', () => {
 })
 
 describe('detectPm', () => {
-	it('defaults to bun without user agent', () => {
+	it('falls back to first available PM via probe', () => {
 		delete process.env.npm_config_user_agent
-		expect(detectPm()).toBe('bun')
+		expect(detectPm(() => true)).toBe('bun')
+		expect(detectPm(cmd => cmd === 'npm')).toBe('npm')
+		expect(detectPm(cmd => cmd === 'pnpm')).toBe('pnpm')
+		expect(detectPm(cmd => cmd === 'yarn')).toBe('yarn')
+		expect(detectPm(() => false)).toBe('bun')
+	})
+
+	it('user agent wins over probe', () => {
+		process.env.npm_config_user_agent = 'yarn/1.22'
+		try {
+			expect(detectPm(() => false)).toBe('yarn')
+		} finally {
+			delete process.env.npm_config_user_agent
+		}
 	})
 })

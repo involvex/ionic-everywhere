@@ -83,3 +83,27 @@ Verified stack: Ionic React **9.0.0** · React **19.2** · Vite **8.2** · TypeS
     cap add with FULL platform name → workspaces applied for electron → root reinstall →
     pruned scripts restored from `src/platform-scripts.ts` registry (single source of
     truth shared with the template; drift-guarded by unit test).
+15. **FEAT-009 prototype (2026-08-26): desktop live-reload needs NO patching.**
+    The Capawesome runtime (`@capawesome/capacitor-electron@0.1.0`,
+    `dist/runtime/index.js`) natively supports a dev-server mode via
+    `process.env.CAPACITOR_ELECTRON_DEV_SERVER_URL`:
+    - loads that URL instead of the `capacitor-electron://` app origin,
+    - installs a relaxed CSP for the dev origin (`config.csp.devPolicy` to override),
+    - retries the load every 1s until Vite is up (`[capacitor-electron] Failed to
+load ... retrying` on stderr while waiting).
+      Verified live in reference-app: `bunx vite --port 5173 --strictPort` +
+      `CAPACITOR_ELECTRON_DEV_SERVER_URL=http://localhost:5173 electron .`
+      → 15s run, empty stdout/stderr (no retries, no CSP violations), process stable;
+      negative control without the env var loaded the production bundle equally clean.
+      Manual dev flow (two terminals):
+      1. `bun run dev` # vite on :5173
+      2. `cd electron && CAPACITOR_ELECTRON_DEV_SERVER_URL=http://localhost:5173 bun run start`
+         Caveats: HMR websockets ride on the relaxed dev CSP; SW registration is a no-op
+         in dev (vite-plugin-pwa `devOptions` disabled). A future `desktop:dev` one-liner
+         would need a process manager dep (e.g. `concurrently`) — deferred to keep the
+         template dep set lean.
+16. **Electron binaries need an explicit install under bun:** bun blocks lifecycle
+    scripts by default, so `electron/dist/` never materializes after install
+    (`electron.exe` missing). Fix inside the platform dir:
+    `bun node_modules/electron/install.js`. Relevant for anyone debugging the
+    desktop shell locally; npm users are unaffected (postinstall runs normally).
