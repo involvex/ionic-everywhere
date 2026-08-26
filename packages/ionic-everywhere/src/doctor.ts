@@ -109,6 +109,7 @@ export function runChecks(inputs: CheckInputs = {}): CheckResult[] {
 	})
 
 	const java = resolveJava(env, javaProbe)
+	const tooNewForGradle = java.version !== null && java.version >= 24
 	results.push({
 		name: 'JDK >= 21 (Android builds)',
 		ok: java.version !== null && java.version >= 21,
@@ -121,7 +122,9 @@ export function runChecks(inputs: CheckInputs = {}): CheckResult[] {
 					: 'no JDK found (set JAVA_HOME or put java on PATH)',
 		hint:
 			java.version !== null && java.version >= 21
-				? undefined
+				? tooNewForGradle
+					? `Java ${java.version} is newer than what Capacitor's bundled Gradle reliably supports ("Unsupported class file major version" failures). Prefer a JDK from the 21-23 line.`
+					: undefined
 				: 'Capacitor 8 requires JDK 21+: https://learn.microsoft.com/en-us/java/openjdk/download',
 	})
 

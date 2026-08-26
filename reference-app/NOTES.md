@@ -107,3 +107,12 @@ load ... retrying` on stderr while waiting).
     (`electron.exe` missing). Fix inside the platform dir:
     `bun node_modules/electron/install.js`. Relevant for anyone debugging the
     desktop shell locally; npm users are unaffected (postinstall runs normally).
+17. **"Unsupported class file major version 69" = Gradle ran on a too-new JVM**
+    (class-file 69 = JDK 25; Gradle 8.x as bundled by Capacitor cannot load it).
+    The project itself is fine - it is purely a JAVA_HOME/PATH resolution issue in
+    the invoking shell. Verified: settings evaluation + full `assembleDebug` pass
+    under JDK 17 and 21 on the very same app that failed under the newer JVM.
+    Mitigations shipped: `scripts/gradle.mjs` now translates this signature into
+    actionable advice, and `doctor` warns when the detected JDK is >= 24.
+    Machine quirk worth remembering: `%USERPROFILE%\.jdks\openjdk-24.0.2` here is
+    mislabeled and actually contains JDK 21.0.8 (nested `bin/bin` layout).

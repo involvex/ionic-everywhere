@@ -129,6 +129,20 @@ describe('runChecks injection (FEAT-010)', () => {
 		expect(sdkCheck?.detail).toBe(sdk)
 	})
 
+	it('warns when the detected JDK is too new for the bundled Gradle', () => {
+		const javaHome = makeTemp()
+		mkdirSync(join(javaHome, 'bin'), {recursive: true})
+		writeFileSync(join(javaHome, 'bin', 'java.exe'), '')
+		const checks = runChecks({
+			...baseInputs,
+			env: {JAVA_HOME: javaHome},
+			javaProbe: () => 25,
+		})
+		const java = checks.find(c => c.name.startsWith('JDK'))
+		expect(java?.ok).toBe(true) // still a usable JDK...
+		expect(java?.hint).toContain('Gradle') // ...but flagged as risky
+	})
+
 	it('allRequiredOk reflects required-check failures only', () => {
 		expect(
 			allRequiredOk([
