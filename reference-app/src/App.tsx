@@ -9,14 +9,12 @@ import {
 	IonTabs,
 } from '@ionic/react'
 import {IonReactRouter} from '@ionic/react-router'
-import {listOutline, settingsOutline, speedometerOutline} from 'ionicons/icons'
 import React from 'react'
 import {Navigate, Route} from 'react-router-dom'
 import AppMenu from './components/AppMenu'
+import ErrorBoundary from './components/ErrorBoundary'
 import {useStoredState} from './hooks/useStoredState'
-import DashboardPage from './pages/DashboardPage'
-import ListPage from './pages/ListPage'
-import SettingsPage from './pages/SettingsPage'
+import {HOME_PATH, NAV_ITEMS} from './nav'
 
 const App: React.FC = () => {
 	const [darkMode] = useStoredState('settings.darkMode', false)
@@ -36,64 +34,46 @@ const App: React.FC = () => {
 								path="/"
 								element={
 									<Navigate
-										to="/dashboard"
+										to={HOME_PATH}
 										replace
 									/>
 								}
 							/>
-							<Route
-								path="/dashboard"
-								element={<DashboardPage />}
-							/>
-							<Route
-								path="/list"
-								element={<ListPage />}
-							/>
-							<Route
-								path="/settings"
-								element={<SettingsPage />}
-							/>
+							{NAV_ITEMS.map(item => (
+								<Route
+									key={item.path}
+									path={item.path}
+									element={
+										<ErrorBoundary>
+											<item.component />
+										</ErrorBoundary>
+									}
+								/>
+							))}
 							<Route
 								path="*"
 								element={
 									<Navigate
-										to="/dashboard"
+										to={HOME_PATH}
 										replace
 									/>
 								}
 							/>
 						</IonRouterOutlet>
 						<IonTabBar slot="bottom">
-							<IonTabButton
-								tab="dashboard"
-								href="/dashboard"
-							>
-								<IonIcon
-									aria-hidden="true"
-									icon={speedometerOutline}
-								/>
-								<IonLabel>Dashboard</IonLabel>
-							</IonTabButton>
-							<IonTabButton
-								tab="list"
-								href="/list"
-							>
-								<IonIcon
-									aria-hidden="true"
-									icon={listOutline}
-								/>
-								<IonLabel>List</IonLabel>
-							</IonTabButton>
-							<IonTabButton
-								tab="settings"
-								href="/settings"
-							>
-								<IonIcon
-									aria-hidden="true"
-									icon={settingsOutline}
-								/>
-								<IonLabel>Settings</IonLabel>
-							</IonTabButton>
+							{NAV_ITEMS.map(item => (
+								<IonTabButton
+									key={item.path}
+									tab={item.path.slice(1)}
+									href={item.path}
+								>
+									<IonIcon
+										aria-hidden="true"
+										icon={item.icon}
+									/>
+									<IonLabel>{item.label}</IonLabel>
+								</IonTabButton>
+							))}
 						</IonTabBar>
 					</IonTabs>
 				</IonSplitPane>

@@ -45,6 +45,14 @@
 > tests), FEAT-033, FEAT-034, FEAT-035, FEAT-027 and FEAT-029 (`src/upgrade.ts`
 > with pure `planUpgrade`/`applyUpgrade`, adopt flow, dry-run, e2e
 > `scripts/cli-test-upgrade.mjs` wired into CI). See "Done this round".
+>
+> **Close-out (2026-08-26, Phase C foundation):** Navigation is now
+> data-driven (`src/nav.ts` single source of truth feeding routes, tabs and
+> menu); every page renders in its own `ErrorBoundary` (FEAT-020); the menu
+> title is tokenized (`__APP_NAME__`); reference-app mirrors the change and its
+> web build passes. Tests: +4 scaffold assertions (120/120 total). The
+> remaining FEAT-008 surface — variant overlays exposed via `--template` —
+> stays open (see Tier 3 note).
 
 ## Executive summary
 
@@ -84,6 +92,8 @@ token replacement). Verification state at close-out: 70/70 unit tests,
 | FEAT-027 | CI web-build of demo app (A′)              | `scripts/cli-test.mjs` runs `bun run build` inside the scaffolded app                                                                                                                                       |
 | FEAT-035 | Windows scaffold-smoke (A′)                | `scaffold-smoke` matrix `[ubuntu-latest, windows-latest]`, timeout 35 min                                                                                                                                   |
 | FEAT-029 | `upgrade` command (Phase B)                | `src/upgrade.ts`: pure `planUpgrade`/`applyUpgrade`, hand-rolled semver, adopt flow, dry-run, copy-if-missing exclusions, dirty-git warn; `tests/upgrade.test.ts`; e2e `scripts/cli-test-upgrade.mjs` in CI |
+| FEAT-008 | Data-driven nav foundation (Phase C1)      | `src/nav.ts` single source driving routes + tabs + menu; refactored `App.tsx`/`AppMenu.tsx`; reference-app mirrored and build-verified; README updated for `nav.ts` registration                            |
+| FEAT-020 | ErrorBoundary per page (Phase C2)          | `src/components/ErrorBoundary.tsx`; each route renders inside its own boundary; console logs stack + retry card instead of blank app                                                                        |
 
 Also new tooling: `bun run clean` (`scripts/clean.mjs`) removes the `.test/`
 output produced by `cli:test`.
@@ -92,12 +102,10 @@ output produced by `cli:test`.
 
 ## Deferred (with reasons)
 
-| ID       | Item                                 | Reason                                                             |
-| -------- | ------------------------------------ | ------------------------------------------------------------------ |
-| FEAT-008 | Template variants via `--template`   | Larger template refactor; needs nav data-model design first        |
-| FEAT-014 | `--dry-run` flag                     | Nice-to-have UX; low value until more phases exist                 |
-| FEAT-016 | npm publish workflow w/ provenance   | Requires npm trusted-publisher/OIDC setup + version-split decision |
-| FEAT-020 | Template polish (ErrorBoundary etc.) | Polish batch; fold into next template-touching round               |
+| ID       | Item                               | Reason                                                                                                            |
+| -------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| FEAT-008 | Template variants via `--template` | Nav data-model foundation shipped (Phase C); only the `--template` overlay/variant selection surface remains open |
+| FEAT-016 | npm publish workflow w/ provenance | Requires npm trusted-publisher/OIDC setup + version-split decision                                                |
 
 ---
 
@@ -106,18 +114,10 @@ output produced by `cli:test`.
 New items from the second analysis pass, tiered by effort/impact. None
 duplicate landed work; FEAT-008/016/020 are carried forward into the tiers.
 
-### Tier 1 — Quick wins (Phase A′, immediate)
+### Tier 1 — Quick wins (Phase A′)
 
-New items from the round-3 audit. Phase A items (FEAT-021…028) shipped — moved
-to "Done this round".
-
-| ID       | Item                                      | Why it matters                                                                                                                                                                                                                                                                                                                                                                                                                           | Touchpoints                                                                             |
-| -------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| FEAT-032 | P0: README token corruption + drift guard | `templates/default/README.md` line 1 reads `# **APP_NAME**` — a prettier pass normalized the `__APP_NAME__` token to markdown bold, so generated apps ship a literal heading instead of their name. Fix: restore the token, add `packages/ionic-everywhere/templates/` to `.prettierignore`, add drift tests (no `\*\*APP_[A-Z_]+\*\*` in any template file; scaffolded README H1 = real app name). Mirror to reference-app (gotcha #7). | template README, `.prettierignore`, `tests/scaffold.test.ts`, `reference-app/README.md` |
-| FEAT-034 | `list` project-info command               | Read `.ionic-everywhere.json` via a `findProjectRoot()` walk; print generator version, options, platform dirs present; `--json` flag; graceful messages for non-project / pre-FEAT-022 dirs. Pure reader + formatter, free companion to FEAT-023/029 diagnostics.                                                                                                                                                                        | new `src/list.ts`, `cli.ts` help+case, `tests/list.test.ts`                             |
-| FEAT-033 | doctor bun sanity check                   | NOTES #10/#11: bun canary installs break silently (dropped native optionals). Probe `bun --version` (3s timeout like other probes, injectable for tests); warn on prerelease/canary tags with hint "upgrade to stable bun ≥ 1.4.1". Skip cleanly when bun absent.                                                                                                                                                                        | `src/doctor.ts`, `tests/doctor.test.ts`                                                 |
-| FEAT-027 | CI web-build of demo app                  | `scaffold-smoke` asserts structure only; actually building the scaffolded app catches dependency-drift incidents early (NOTES #9/#11 class). Cheapest CI hardening.                                                                                                                                                                                                                                                                      | Extend `scripts/cli-test.mjs`                                                           |
-| FEAT-035 | Windows scaffold-smoke job                | `scaffold-smoke` is ubuntu-only while lint-test covers both OSes; path/PATHEXT regressions (`gradlew`, `where.exe` probes) ship undetected. Matrix `[ubuntu-latest, windows-latest]`.                                                                                                                                                                                                                                                    | `.github/workflows/ci.yml`                                                              |
+**SHIPPED 2026-08-26** — FEAT-032, 034, 033, 027, 035 all implemented and
+verified; moved into "Done this round". No quick-win backlog remains at this tier right now.
 
 ### Tier 2 — Medium (opportunistic backlog)
 
@@ -129,12 +129,11 @@ to "Done this round".
 
 ### Tier 3 — High tier (Phases B–D)
 
-| ID              | Item                      | Why it matters                                                                                                                                                                                                               | Dependencies                                                                                 |
-| --------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| FEAT-029        | `upgrade` command         | Biggest user-facing value for existing projects: re-sync scripts from the canonical registry, re-inject devtools hook (both already idempotent helpers), copy-if-missing new template files, drift report on modified files. | Depends on FEAT-022 manifest (`"schema":1`) — **design drafted**, see "Phase B design" below |
-| FEAT-008 (+020) | Template variants         | Data-driven nav model first (single source drives AppMenu + tabs + routes); variant overlays afterwards. Absorbs FEAT-020 polish and FEAT-024's platform-row hiding.                                                         | Existing deferred item                                                                       |
-| FEAT-030        | Release/signing helper    | Keystore generation guidance, env-var-guarded gradle signing config, `build:android:release` script + docs.                                                                                                                  | Reference-app verified before template port                                                  |
-| FEAT-016        | npm publish w/ provenance | First-release pipeline.                                                                                                                                                                                                      | Still blocked on npm trusted-publisher setup                                                 |
+| ID       | Item                      | Why it matters                                                                                                                               | Dependencies                                                                                                                               |
+| -------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| FEAT-008 | `--template` variants     | Foundation shipped (Phase C): `src/nav.ts` single source; `AppMenu`/`AppTabs`/`App.tsx` all consume it. Open remainder: `--template <minimal | full>`choosing an overlay and`NAV_ITEMS` seed. Absorbs FEAT-020-related polish and platform-row hiding (was deferred in FEAT-008's design) | Needs variant overlay design; nav model is in place |
+| FEAT-030 | Release/signing helper    | Keystore generation guidance, env-var-guarded gradle signing config, `build:android:release` script + docs.                                  | Reference-app verified before template port                                                                                                |
+| FEAT-016 | npm publish w/ provenance | First-release pipeline.                                                                                                                      | Still blocked on npm trusted-publisher setup                                                                                               |
 
 ---
 
@@ -171,7 +170,8 @@ AGENTS.md #9).
 3. **Phase B (SHIPPED 2026-08-26):** FEAT-029 `upgrade` — design below
    implemented as drafted; decisions resolved: apply-and-report script drift
    under `--yes`, adopt flow enabled in v1, `--dry-run` folded into scope.
-4. **Phase C:** FEAT-008 variants (data-driven nav first, folding in FEAT-020).
+4. **Phase C:** FEAT-008 variants — foundation (nav model + ErrorBoundary)
+   SHIPPED 2026-08-26; variant overlays remain open (next iteration).
 5. **Phase D:** FEAT-016 publish pipeline once npm trusted publishing is
    configured; FEAT-030 signing helper after a reference-app keystore run.
 6. Medium tier (FEAT-023, 025, 031) slots into any gap.

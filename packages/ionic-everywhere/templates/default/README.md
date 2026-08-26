@@ -63,6 +63,31 @@ Responsive by design: bottom tab bar on narrow screens, persistent sidebar on wi
 
 ## Adding pages
 
+Navigation is data-driven: routes, tab buttons and the side menu all derive
+from the single `NAV_ITEMS` list in `src/nav.ts`.
+
 1. Create `src/pages/MyPage.tsx` wrapping content in `<IonPage>`.
-2. Add a `<Route path="/mypage">` in `src/App.tsx`.
-3. Add an entry to `menuItems` in `src/components/AppMenu.tsx` and an `IonTabButton` in `App.tsx`.
+2. Register it once in `src/nav.ts`:
+
+   ```ts
+   import {myPageOutline} from 'ionicons/icons'
+   import MyPage from './pages/MyPage'
+
+   // add to NAV_ITEMS:
+   {
+   	path: '/mypage',
+   	label: 'My Page',
+   	icon: myPageOutline,
+   	component: MyPage,
+   }
+   ```
+
+Routes, the tab bar entry and the menu item are generated for you — no edits
+needed in `App.tsx` or `AppMenu.tsx`. Each page renders inside its own
+`ErrorBoundary`, so a broken page shows a retry card instead of a blank app.
+
+## Template variants
+
+The nav model is the foundation for upcoming `--template` variants (minimal,
+tabs-only, etc.): a variant only swaps the `NAV_ITEMS` seed and page set, not
+the shell wiring.

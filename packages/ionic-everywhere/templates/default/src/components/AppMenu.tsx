@@ -11,20 +11,8 @@ import {
 	IonTitle,
 	IonToolbar,
 } from '@ionic/react'
-import {listOutline, settingsOutline, speedometerOutline} from 'ionicons/icons'
 import React from 'react'
-
-interface MenuItem {
-	title: string
-	path: string
-	icon: string
-}
-
-const menuItems: MenuItem[] = [
-	{title: 'Dashboard', path: '/dashboard', icon: speedometerOutline},
-	{title: 'List', path: '/list', icon: listOutline},
-	{title: 'Settings', path: '/settings', icon: settingsOutline},
-]
+import {NAV_ITEMS} from '../nav'
 
 const AppMenu: React.FC = () => (
 	<IonMenu
@@ -33,13 +21,13 @@ const AppMenu: React.FC = () => (
 	>
 		<IonHeader>
 			<IonToolbar>
-				<IonTitle>Ionic Everywhere</IonTitle>
+				<IonTitle>__APP_NAME__</IonTitle>
 			</IonToolbar>
 		</IonHeader>
 		<IonContent>
 			<IonList inset>
 				<IonListHeader>Navigate</IonListHeader>
-				{menuItems.map(item => (
+				{NAV_ITEMS.map(item => (
 					<IonMenuToggle
 						key={item.path}
 						autoHide={false}
@@ -53,7 +41,7 @@ const AppMenu: React.FC = () => (
 								slot="start"
 								icon={item.icon}
 							/>
-							<IonLabel>{item.title}</IonLabel>
+							<IonLabel>{item.label}</IonLabel>
 						</IonItem>
 					</IonMenuToggle>
 				))}

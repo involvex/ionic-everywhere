@@ -610,3 +610,56 @@ describe('template token drift guard (FEAT-032)', () => {
 		expect(readme.startsWith('# Drift App')).toBe(true)
 	})
 })
+
+describe('data-driven nav model + ErrorBoundary (FEAT-008/020)', () => {
+	it('template ships a nav model as the single navigation source', () => {
+		const nav = readFileSync(join(templateDir(), 'src', 'nav.ts'), 'utf8')
+		expect(nav).toContain('export const NAV_ITEMS')
+		expect(nav).toContain('export const HOME_PATH')
+	})
+
+	it('shell wiring derives from the nav model, not hardcoded routes', () => {
+		const app = readFileSync(join(templateDir(), 'src', 'App.tsx'), 'utf8')
+		const menu = readFileSync(
+			join(templateDir(), 'src', 'components', 'AppMenu.tsx'),
+			'utf8',
+		)
+		expect(app).toContain("from './nav'")
+		expect(app).toContain('NAV_ITEMS.map')
+		// no per-page <Route> blocks left in App.tsx
+		expect(app).not.toContain('DashboardPage')
+		expect(menu).toContain('NAV_ITEMS.map')
+		expect(menu).toContain('__APP_NAME__') // title tokenized (FEAT-011)
+	})
+
+	it('every page renders inside an ErrorBoundary', () => {
+		const boundary = readFileSync(
+			join(templateDir(), 'src', 'components', 'ErrorBoundary.tsx'),
+			'utf8',
+		)
+		expect(boundary).toContain('getDerivedStateFromError')
+		const app = readFileSync(join(templateDir(), 'src', 'App.tsx'), 'utf8')
+		expect(app).toContain('<ErrorBoundary>')
+	})
+
+	it('generated app menu title is the real app name', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Nav App',
+			appId: 'io.x.nav',
+			nameKebab: 'nav-app',
+			pm: 'npm',
+		})
+		const menu = readFileSync(
+			join(target, 'src', 'components', 'AppMenu.tsx'),
+			'utf8',
+		)
+		expect(menu).toContain('<IonTitle>Nav App</IonTitle>')
+		expect(menu).not.toContain('__APP_NAME__')
+		expect(existsSync(join(target, 'src', 'nav.ts'))).toBe(true)
+		expect(
+			existsSync(join(target, 'src', 'components', 'ErrorBoundary.tsx')),
+		).toBe(true)
+	})
+})
