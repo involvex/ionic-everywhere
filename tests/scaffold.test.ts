@@ -215,7 +215,7 @@ const FULL_SCRIPTS = {
 	'build:desktop':
 		'npm run build && cap sync @capawesome/capacitor-electron && cd electron && npm run pack',
 	'build:android':
-		'npm run build && cap sync android && cd android && gradlew assembleDebug',
+		'npm run build && cap sync android && node scripts/gradle.mjs assembleDebug',
 	'build:all': 'npm run build:android && npm run build:desktop',
 }
 

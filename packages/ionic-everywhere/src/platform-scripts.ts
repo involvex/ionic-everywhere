@@ -20,7 +20,7 @@ export const CANONICAL_SCRIPTS: Record<string, string> = {
 	android: 'cap run android',
 	preandroid: `npm run build && cap sync ${CAP_PLATFORM_NAMES.android}`,
 	'open:android': 'cap open android',
-	'build:android': `npm run build && cap sync ${CAP_PLATFORM_NAMES.android} && cd android && gradlew assembleDebug`,
+	'build:android': `npm run build && cap sync ${CAP_PLATFORM_NAMES.android} && node scripts/gradle.mjs assembleDebug`,
 	desktop: 'cd electron && npm run start',
 	predesktop: `npm run build && cap sync ${CAP_PLATFORM_NAMES.desktop}`,
 	'build:desktop': `npm run build && cap sync ${CAP_PLATFORM_NAMES.desktop} && cd electron && npm run pack`,

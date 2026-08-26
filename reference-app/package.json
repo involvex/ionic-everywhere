@@ -12,7 +12,7 @@
 		"android": "cap run android",
 		"build": "tsc --noEmit && vite build",
 		"build:all": "bun run build:android && bun run build:desktop",
-		"build:android": "bun run build && cap sync android && cd android && gradlew assembleDebug",
+		"build:android": "bun run build && cap sync android && node scripts/gradle.mjs assembleDebug",
 		"build:desktop": "bun run build && cap sync @capawesome/capacitor-electron && cd electron && bun run pack",
 		"predesktop": "bun run build && cap sync @capawesome/capacitor-electron",
 		"desktop": "cd electron && bun run start",
