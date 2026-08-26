@@ -10,6 +10,10 @@ export interface CheckResult {
 	hint?: string
 }
 
+// Environment probes must never hang the CLI: a stalled java.exe or a
+// path lookup wedged on AV/indexer load should read as "not available".
+const PROBE_TIMEOUT_MS = 3_000
+
 export function nodeMajor(version?: string): number | null {
 	const m = /^v(\d+)\./.exec(version ?? '')
 	return m ? Number(m[1]) : null
@@ -17,7 +21,11 @@ export function nodeMajor(version?: string): number | null {
 
 export function javaVersion(javaExe: string): number | null {
 	try {
-		const out = spawnSync(javaExe, ['-version'], {encoding: 'utf8'})
+		const out = spawnSync(javaExe, ['-version'], {
+			encoding: 'utf8',
+			timeout: PROBE_TIMEOUT_MS,
+		})
+		if (out.error) return null
 		const text = `${out.stderr ?? ''}${out.stdout ?? ''}`
 		const m = /(?:openjdk|java)\s+version\s+"(\d+)/i.exec(text)
 		return m ? Number(m[1]) : null
@@ -32,6 +40,7 @@ function commandExists(cmd: string): boolean {
 		execFileSync(probe, process.platform === 'win32' ? [cmd] : ['-v', cmd], {
 			stdio: 'ignore',
 			shell: process.platform !== 'win32',
+			timeout: PROBE_TIMEOUT_MS,
 		})
 		return true
 	} catch {

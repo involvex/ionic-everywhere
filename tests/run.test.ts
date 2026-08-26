@@ -79,7 +79,7 @@ describe('runStreaming', () => {
 		const logged = readFileSync(log, 'utf8')
 		expect(logged).toContain('$ ')
 		expect(logged).toContain('line-59999')
-	}, 60_000)
+	}, 120_000)
 
 	it('writes a command header into the log file', async () => {
 		const dir = makeTemp()

@@ -29,5 +29,5 @@ describe('runChecks / formatReport', () => {
 		expect(checks.length).toBeGreaterThanOrEqual(4)
 		const report = formatReport(checks)
 		expect(report).toMatch(/\[ok\]|\[FAIL\]|\[warn\]/)
-	})
+	}, 15_000) // runChecks spawns java/where probes; allow for slow machines/AV scans
 })
