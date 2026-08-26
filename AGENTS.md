@@ -70,6 +70,17 @@ type-only pass if needed.
    merge it into the app root. The CLI only injects a `workspaces: ["electron"]`
    pointer AFTER `cap add` runs (bun/npm fail on missing workspace dirs), then
    reinstalls from the root so there is a single lockfile.
+9. **Template deps must be pure-JS or explicitly pinned.** `typescript` stays `^5.9.3`
+   (TS7's native binary arrives via per-platform optionalDependencies that some bun
+   versions silently skip). `react-router`/`react-router-dom` are direct deps —
+   `@ionic/react-router` only peer-depends on them and bun doesn't auto-install peers.
+   `vite-plugin-pwa` needs explicit `workbox-window`. All three rules are enforced by
+   unit tests; don't remove them.
+10. **bun canary is not supported for installs.** 1.4.0-canary.1 nondeterministically
+    produced broken layouts (dropped vite's transitive `rolldown`, skipped all
+    `os`/`cpu`-gated optionals). Stable bun (≥1.4.1) is required locally; the
+    canonical script registry lives in `src/platform-scripts.ts` — edit scripts there
+    (drift-guard test will fail if template and registry diverge).
 
 ## Changing the generated app
 

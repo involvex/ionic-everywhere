@@ -1,4 +1,5 @@
 import {setupIonicReact} from '@ionic/react'
+import {registerSW} from 'virtual:pwa-register'
 import React from 'react'
 import {createRoot} from 'react-dom/client'
 import App from './App'
@@ -14,6 +15,8 @@ import '@ionic/react/css/typography.css'
 import './theme/variables.css'
 
 setupIonicReact()
+
+registerSW({immediate: true})
 
 const container = document.getElementById('root')
 const root = createRoot(container!)

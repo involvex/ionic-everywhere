@@ -3,6 +3,7 @@ import * as p from '@clack/prompts'
 import {readFileSync} from 'node:fs'
 import {basename, dirname, join} from 'node:path'
 import {fileURLToPath} from 'node:url'
+import {runAdd, type AddOptions} from './add'
 import {formatReport, runChecks} from './doctor'
 import {runNew, type NewOptions} from './new'
 import {parseFlags, toKebab} from './util'
@@ -20,12 +21,19 @@ ionic-everywhere v${VERSION} - one responsive Ionic React codebase, web + Androi
 Usage:
   ionic-everywhere new [dir] [options]   Scaffold a new project
   create-ionic-everywhere [dir]          Alias for "new"
+  ionic-everywhere add <android|desktop> Add a platform to an existing project
+                                         ("electron" is accepted as an alias
+                                         for "desktop")
   ionic-everywhere doctor                Check the environment
 
 Options:
-  --name <name>       Display name of the app
+  --name <name>       Display name of the app (no & < > " ' \\, line breaks or
+                      control characters — they break Android's strings.xml
+                      and generated config files)
   --app-id <id>       Reverse-DNS application id (e.g. com.example.myapp)
   --pm <bun|npm|pnpm|yarn>
+                      Package manager for the generated project
+  --dir <path>        (add) Project directory (defaults to cwd)
   --no-android        Skip adding the Android platform
   --no-electron       Skip adding the desktop (Electron) platform
   --no-install        Skip dependency install and platform generation
@@ -38,6 +46,7 @@ Examples:
   bunx create-ionic-everywhere my-app
   ionic-everywhere new my-app --yes
   ionic-everywhere new my-app --no-electron   # web + Android only
+  cd my-app && ionic-everywhere add desktop   # add Electron later
 `
 
 function defaultAction(argv: string[]): string {
@@ -88,6 +97,22 @@ async function main(): Promise<number> {
 				yes: flags.yes === true,
 			}
 			return runNew(opts)
+		}
+		case 'add': {
+			if (positionals.length > 1) {
+				console.error(
+					'Too many arguments. Usage: ionic-everywhere add <android|desktop>',
+				)
+				return 1
+			}
+			const opts: AddOptions = {
+				platform: positionals[0],
+				projectDir: typeof flags.dir === 'string' ? flags.dir : undefined,
+				pm: typeof flags.pm === 'string' ? flags.pm : undefined,
+				install: flags.install !== false,
+				yes: flags.yes === true,
+			}
+			return runAdd(opts)
 		}
 		default:
 			console.error(`Unknown command: ${action}\n${HELP}`)

@@ -51,3 +51,35 @@ Verified stack: Ionic React **9.0.0** · React **19.2** · Vite **8.2** · TypeS
 - JDK 21+ (`JAVA_HOME`) — Android builds only
 - Android SDK (`ANDROID_HOME`) — Android builds only
 - Nothing extra for desktop (Electron downloads on first package)
+
+---
+
+# Addendum — Phase 2 findings (2026-08-26)
+
+9. **TypeScript 7 (native) is banned from the template.** `typescript@7.0.2` ships its
+   binary via 20 per-platform `optionalDependencies`; bun 1.4.0-canary.1 recorded them
+   in the lockfile but materialized **none** of the `os`/`cpu`-gated packages to disk,
+   so every generated app crashed with `Unable to resolve @typescript/typescript-win32-x64`.
+   Template + CLI now pin `typescript ^5.9.3` (pure-JS). Revisit TS7 only behind an
+   explicit opt-in flag.
+10. **`react-router` / `react-router-dom` MUST be direct deps** of generated apps:
+    `@ionic/react-router@9` declares them as peerDependencies, and bun does not
+    auto-install peers (npm does). Template pins both at `^6.30.6`.
+11. **bun canary linker/installer nondeterminism:** 1.4.0-canary.1 produced a hoisted
+    install that silently dropped vite's transitive `rolldown` (and all native
+    optionals) from disk _and_ lockfile; minutes earlier it had produced a working
+    isolated (`.bun` store) layout for the same project. Upgrading to stable bun
+    **1.4.1** fixed installs completely — no dependency hacks needed. Prefer stable;
+    if users report `Cannot find package 'rolldown'`, tell them to upgrade bun.
+12. **PWA stack verified:** `vite-plugin-pwa@1.3.0` (supports Vite 8) +
+    explicit `workbox-window ^7.4.1` devDep (optional peer — bun won't install it
+    otherwise; build fails resolving `virtual:pwa-register` without it).
+    `registerType: 'autoUpdate'`, relative manifest link confirmed with `base: './'`,
+    SW registration is a no-op inside Capacitor/Electron WebViews (non-secure context).
+13. **Icon/splash pipeline:** placeholder PNGs in `assets/` (1024/2732px) +
+    `assets` script (`npx @capacitor/assets generate --android --assetPath assets`);
+    PWA icons in `public/icons/`. Verified end-to-end via scaffold → build on Windows.
+14. **`ionic-everywhere add <android|desktop>` verified e2e** (`scripts/cli-test-add.mjs`):
+    cap add with FULL platform name → workspaces applied for electron → root reinstall →
+    pruned scripts restored from `src/platform-scripts.ts` registry (single source of
+    truth shared with the template; drift-guarded by unit test).

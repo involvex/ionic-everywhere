@@ -30,6 +30,38 @@ export function isValidAppId(id: string): boolean {
 	return /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(id)
 }
 
+export const VALID_PMS = ['bun', 'npm', 'pnpm', 'yarn'] as const
+
+export type ValidPm = (typeof VALID_PMS)[number]
+
+export function isValidPm(pm: string): pm is ValidPm {
+	return (VALID_PMS as readonly string[]).includes(pm)
+}
+
+// Blocks XML-critical characters (& < > " ' \) AND control/line-break chars:
+// the app name is token-injected into single-quoted TS literals
+// (capacitor.config.ts, vite.config.ts) where newlines would corrupt the files.
+const UNSAFE_APP_NAME = /[&<>"'\\\r\n\t]/
+
+function hasControlChars(name: string): boolean {
+	for (const ch of name) {
+		const code = ch.codePointAt(0) ?? 0
+		if (code < 0x20 || code === 0x7f) return true
+	}
+	return false
+}
+
+export function isXmlSafeAppName(name: string): boolean {
+	return !UNSAFE_APP_NAME.test(name) && !hasControlChars(name)
+}
+
+export function unsafeAppNameReason(name: string): string {
+	const chars = '[&<>"\'\\\\]'
+	return hasControlChars(name)
+		? `contains line breaks or control characters (in addition to avoiding ${chars})`
+		: `contains one of ${chars}`
+}
+
 export function detectPm(): 'bun' | 'npm' | 'pnpm' | 'yarn' {
 	if (process.env.npm_config_user_agent) {
 		const ua = process.env.npm_config_user_agent

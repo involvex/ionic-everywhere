@@ -1,10 +1,25 @@
 import {spawnSync} from 'node:child_process'
-import {existsSync, readFileSync, rmSync} from 'node:fs'
+import {existsSync, mkdirSync, readFileSync, readdirSync, rmSync} from 'node:fs'
 import {join} from 'node:path'
 
-const target = '.test/demo-app'
-
-rmSync('.test', {recursive: true, force: true})
+// Windows: a previous run's target dir can be held (e.g. as a process cwd),
+// so use a unique per-run directory and clean stale ones best-effort.
+const base = '.test'
+try {
+	rmSync(base, {recursive: true, force: true})
+} catch {
+	// locked by another process; fall through and prune what we can
+}
+mkdirSync(base, {recursive: true})
+for (const entry of readdirSync(base)) {
+	try {
+		rmSync(join(base, entry), {recursive: true, force: true})
+	} catch {
+		// still locked; leave it
+	}
+}
+const stamp = `${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}-${Math.random().toString(36).slice(2, 7)}`
+const target = join(base, `demo-app-${stamp}`)
 
 const result = spawnSync(
 	process.execPath,

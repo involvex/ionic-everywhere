@@ -25,7 +25,12 @@ export function templateDir(): string {
 	)
 }
 
-const TEXT_FILES = ['package.json', 'capacitor.config.ts', 'index.html']
+const TEXT_FILES = [
+	'package.json',
+	'capacitor.config.ts',
+	'index.html',
+	'vite.config.ts',
+]
 
 export function applyTokens(
 	content: string,
@@ -37,14 +42,25 @@ export function applyTokens(
 		.replaceAll('__APP_NAME_KEBAB__', opts.nameKebab)
 }
 
+const PM_DLX: Partial<Record<string, string>> = {
+	bun: 'bun x',
+	pnpm: 'pnpm dlx',
+	yarn: 'yarn dlx',
+}
+
 export function applyRunner(
 	scripts: Record<string, string>,
 	pm?: string,
 ): Record<string, string> {
 	if (!pm || pm === 'npm') return scripts
 	const runner = `${pm} run`
+	const dlx = PM_DLX[pm]
 	for (const key of Object.keys(scripts)) {
-		scripts[key] = scripts[key].replaceAll('npm run', runner)
+		let value = scripts[key].replaceAll('npm run', runner)
+		// Rewrite npx only in invoker position (start of value or after a chain
+		// segment), never inside arbitrary arguments like `echo npx foo`.
+		if (dlx) value = value.replace(/(^|&&\s*)npx\s/g, `$1${dlx} `)
+		scripts[key] = value
 	}
 	return scripts
 }
@@ -96,47 +112,5 @@ export function applyWorkspaces(
 	} else {
 		delete pkg.workspaces
 	}
-	writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
-}
-
-export function prunePlatformScripts(
-	pkgPath: string,
-	android: boolean,
-	electron: boolean,
-	pm = 'npm',
-): void {
-	const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
-		scripts?: Record<string, string>
-	}
-	const scripts = pkg.scripts ?? {}
-	if (!android) {
-		delete scripts['android']
-		delete scripts['preandroid']
-		delete scripts['open:android']
-		delete scripts['build:android']
-	}
-	if (!electron) {
-		delete scripts['desktop']
-		delete scripts['predesktop']
-		delete scripts['build:desktop']
-	}
-	if (!android || !electron) {
-		const syncKey = 'sync'
-		if (typeof scripts[syncKey] === 'string') {
-			let value = scripts[syncKey]
-			if (!android) value = value.replace(/\s*&&\s*cap sync android/g, '')
-			if (!electron)
-				value = value.replace(
-					/\s*&&\s*cap sync @capawesome\/capacitor-electron/g,
-					'',
-				)
-			scripts[syncKey] = value.trim()
-		}
-		if (android && !electron) scripts['build:all'] = `${pm} run build:android`
-		else if (!android && electron)
-			scripts['build:all'] = `${pm} run build:desktop`
-		else delete scripts['build:all']
-	}
-	pkg.scripts = scripts
 	writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
 }
