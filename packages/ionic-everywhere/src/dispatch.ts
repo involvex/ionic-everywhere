@@ -12,6 +12,11 @@ export function defaultAction(argv: string[], binName?: string): string {
 		'',
 	)
 	if (toKebab(bin).startsWith('create')) return 'new'
+	if (toKebab(bin) === 'ine') {
+		const first = argv[0]
+		if (!first || first.startsWith('-')) return 'new'
+		return first
+	}
 	const first = argv[0]
 	if (!first || first.startsWith('-')) return 'new'
 	return first

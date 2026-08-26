@@ -20,6 +20,7 @@
 	"type": "module",
 	"bin": {
 		"create-ionic-everywhere": "./dist/cli.js",
+		"ine": "./dist/cli.js",
 		"ionic-everywhere": "./dist/cli.js"
 	},
 	"files": [

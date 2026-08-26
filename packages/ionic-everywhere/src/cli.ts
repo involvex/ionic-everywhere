@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs'
 import {dirname, join} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {runAdd, type AddOptions} from './add'
+import {generateCompletions} from './completions'
 import {defaultAction} from './dispatch'
 import {allRequiredOk, formatReport, runChecks} from './doctor'
 import {runList, type ListOptions} from './list'
@@ -30,9 +31,11 @@ Usage:
   ionic-everywhere doctor                Check the environment
   ionic-everywhere list                  Show generator info for the nearest
                                          ionic-everywhere project
-  ionic-everywhere upgrade               Bring an existing project's tooling
-                                         up to the current template (scripts,
-                                         new template files, manifest)
+   ionic-everywhere upgrade               Bring an existing project's tooling
+                                          up to the current template (scripts,
+                                          new template files, manifest)
+   ionic-everywhere completions <shell>   Generate shell tab completions
+                                          (powershell, bash, zsh, fish)
 
 Options:
   --name <name>       Display name of the app (no & < > " ' \\, line breaks or
@@ -160,6 +163,17 @@ async function main(): Promise<number> {
 				yes: flags.yes === true,
 			}
 			return runUpgrade(opts)
+		}
+		case 'completions': {
+			const shell = positionals[0] ?? 'powershell'
+			try {
+				const script = generateCompletions(shell)
+				console.log(script)
+				return 0
+			} catch (err) {
+				console.error(err instanceof Error ? err.message : String(err))
+				return 1
+			}
 		}
 		default:
 			console.error(`Unknown command: ${action}\n${HELP}`)
