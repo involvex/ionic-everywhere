@@ -19,7 +19,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - run: bun install --frozen-lockfile
       - run: bun run --filter @involvex/ionic-everywhere build
       - name: Scaffold and build debug APK
