@@ -21,15 +21,17 @@ jobs:
       - uses: actions/checkout@v5
       - name: Install Bun
         run: |
-          BUN_INSTALL_VERSION=1.4.1 curl -fsSL https://bun.sh/install | bash
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            BUN_PATH=$(bun --get-home 2>/dev/null || echo "$HOME/.bun/bin")
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            curl -fsSL -o /tmp/bun.zip \
+              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-windows-x64.zip
+            mkdir -p ~/.bun/bin
+            tar -xf /tmp/bun.zip -C ~/.bun/bin/
           else
-            BUN_PATH="$HOME/.bun/bin"
+            curl -fsSL https://bun.sh/install | bash
           fi
+          BUN_PATH="$HOME/.bun/bin"
           echo "$BUN_PATH" >> "$GITHUB_PATH"
-          echo "bun installed at: $BUN_PATH"
-          command -v bun && bun --version
+          "$BUN_PATH/bun" --version
         shell: bash
       - name: Cache bun install cache
         uses: actions/cache@v5
@@ -60,15 +62,17 @@ jobs:
       - uses: actions/checkout@v5
       - name: Install Bun
         run: |
-          BUN_INSTALL_VERSION=1.4.1 curl -fsSL https://bun.sh/install | bash
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            BUN_PATH=$(bun --get-home 2>/dev/null || echo "$HOME/.bun/bin")
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            curl -fsSL -o /tmp/bun.zip \
+              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-windows-x64.zip
+            mkdir -p ~/.bun/bin
+            tar -xf /tmp/bun.zip -C ~/.bun/bin/
           else
-            BUN_PATH="$HOME/.bun/bin"
+            curl -fsSL https://bun.sh/install | bash
           fi
+          BUN_PATH="$HOME/.bun/bin"
           echo "$BUN_PATH" >> "$GITHUB_PATH"
-          echo "bun installed at: $BUN_PATH"
-          command -v bun && bun --version
+          "$BUN_PATH/bun" --version
         shell: bash
       - name: Cache bun install cache
         uses: actions/cache@v5
