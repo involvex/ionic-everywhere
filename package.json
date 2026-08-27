@@ -9,7 +9,9 @@
 		"packages/*"
 	],
 	"scripts": {
+		"prebuild": "bun run verify",
 		"build": "bun run --filter @involvex/ionic-everywhere build",
+		"ci:lint-test": "bun run verify && bunx tsc -p packages/ionic-everywhere/tsconfig.json --noEmit && bun run build",
 		"clean": "bun scripts/clean.mjs",
 		"cli:dev": "bun run --filter @involvex/ionic-everywhere dev",
 		"cli:test": "bun run build && bun scripts/cli-test.mjs",
