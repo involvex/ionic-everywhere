@@ -19,8 +19,8 @@ export function generateCompletions(shell: string): string {
 
 function powershellCompletions(): string {
 	return `
-Register-ArgumentCompleter -CommandName 'ionic-everywhere', 'create-ionic-everywhere', 'ine' -ScriptBlock {
-    param($commandName, $wordToComplete, $cursorPosition)
+Register-ArgumentCompleter -Native -CommandName 'ionic-everywhere', 'create-ionic-everywhere', 'ine' -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
 
     $commands = @('new', 'add', 'doctor', 'list', 'upgrade', 'completions')
     $platforms = @('android', 'desktop', 'electron')
@@ -32,27 +32,18 @@ Register-ArgumentCompleter -CommandName 'ionic-everywhere', 'create-ionic-everyw
     $listFlags = @('--dir', '--json', '--help')
     $upgradeFlags = @('--dir', '--pm', '--dry-run', '--force', '--yes', '--help')
     $doctorFlags = @('--json', '--help')
-    $completionsArgs = @('powershell', 'bash', 'zsh', 'fish')
 
-    $line = $executionContext.SessionState.InvokeCommand.ExpandString($input)
-    # Fallback if $line is empty
-    if (-not $line) {
-        $line = $cursorPosition -ge 0 ? $host.UI.RawUI.ReadLine() : '' # approximate
-    }
+    $elements = $commandAst.CommandElements
+    $astCount = $elements.Count
 
-    # Better: split command line words
-    $tokens = [System.Management.Automation.PSParser]::Tokenize($line, [ref]$null)
-    $words = @($tokens | Where-Object { $_.Type -eq 'String' -or $_.Type -eq 'CommandArgument' -or $_.Type -eq 'Command' } | Select-Object -ExpandProperty Content)
-
-    if ($words.Count -le 1) {
+    if ($astCount -le 1) {
         return $commands | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
             [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
         }
     }
 
-    $subCommand = $words[1]
+    $subCommand = $elements[1].ToString()
 
-    # If subCommand is not one of the main commands, check if it's new (default action)
     if ($commands -notcontains $subCommand) {
         $subCommand = 'new'
     }
@@ -60,21 +51,28 @@ Register-ArgumentCompleter -CommandName 'ionic-everywhere', 'create-ionic-everyw
     $suggestions = @()
     switch ($subCommand) {
         'add' {
-            if ($words.Count -eq 2) {
+            if ($astCount -eq 2) {
                 $suggestions = $platforms
             } else {
                 $suggestions = $addFlags
             }
         }
         'new' {
-            if ($words -contains '--pm') {
+            $hasPm = $false
+            for ($i = 2; $i -lt $astCount; $i++) {
+                if ($elements[$i].ToString() -eq '--pm') {
+                    $hasPm = $true
+                    break
+                }
+            }
+            if ($hasPm -and ($elements[$astCount - 1].ToString() -eq '--pm')) {
                 $suggestions = $pms
             } else {
                 $suggestions = $newFlags
             }
         }
         'completions' {
-            if ($words.Count -eq 2) {
+            if ($astCount -eq 2) {
                 $suggestions = $shells
             }
         }
