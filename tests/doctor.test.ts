@@ -93,7 +93,7 @@ describe('runChecks injection (FEAT-010)', () => {
 			},
 		})
 		const java = checks.find(c => c.name.startsWith('JDK'))
-		expect(probes[0]).toBe(join(javaHome, 'bin', 'java.exe'))
+		expect(probes[0]).toBe(join(javaHome, 'bin', javaExe))
 		expect(java?.ok).toBe(false)
 		expect(java?.detail).toBe('JAVA_HOME provides Java 17')
 	})
