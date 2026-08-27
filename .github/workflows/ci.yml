@@ -59,7 +59,7 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       - name: Download CLI dist from lint-test
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: cli-dist
           path: packages/ionic-everywhere/dist/
