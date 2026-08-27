@@ -18,13 +18,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        # Stable bun only - canary builds produce broken installs (AGENTS.md #10)
-        with:
-          bun-version: 1.4.1
+      - uses: actions/checkout@v5
+      - name: Install Bun
+        run: BUN_INSTALL_VERSION=1.4.1 curl -fsSL https://bun.sh/install | bash && echo "$HOME/.bun/bin" >> $GITHUB_PATH
+        shell: bash
       - name: Cache bun install cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
@@ -32,7 +31,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run ci:lint-test
       - name: Upload CLI dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: cli-dist
           path: packages/ionic-everywhere/dist/
@@ -49,18 +48,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.4.1
+      - uses: actions/checkout@v5
+      - name: Install Bun
+        run: BUN_INSTALL_VERSION=1.4.1 curl -fsSL https://bun.sh/install | bash && echo "$HOME/.bun/bin" >> $GITHUB_PATH
+        shell: bash
       - name: Cache bun install cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       - name: Download CLI dist from lint-test
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: cli-dist
           path: packages/ionic-everywhere/dist/
