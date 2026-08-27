@@ -15,6 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        bun-version: [1.4.1, latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -22,19 +23,27 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         # Stable bun only - canary builds produce broken installs (AGENTS.md #10)
         with:
-          bun-version: 1.4.1
+          bun-version: ${{ matrix.bun-version }}
       - name: Cache bun install cache
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-
+          key: bun-${{ runner.os }}-${{ matrix.bun-version }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-${{ matrix.bun-version }}-
       - run: bun install --frozen-lockfile
       - run: bun run verify
       - run: bunx tsc -p packages/ionic-everywhere/tsconfig.json --noEmit
       - run: bun run build
+      - name: Upload CLI dist (ubuntu only)
+        if: matrix.os == 'ubuntu-latest' && matrix.bun-version == '1.4.1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-dist
+          path: packages/ionic-everywhere/dist/
+          retention-days: 1
 
   scaffold-smoke:
+    needs: lint-test
     # FEAT-035: run on both OSes - path/PATHEXT regressions (gradlew, where.exe
     # probes) previously shipped undetected with an ubuntu-only smoke job.
     strategy:
@@ -54,8 +63,13 @@ jobs:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
+      - name: Download CLI dist from lint-test
+        uses: actions/download-artifact@v4
+        with:
+          name: cli-dist
+          path: packages/ionic-everywhere/dist/
       - run: bun install --frozen-lockfile
-      # End-to-end: build CLI, scaffold web+android+desktop app, assert output,
+      # End-to-end: scaffold web+android+desktop app, assert output,
       # then web-build the result (FEAT-027) to catch dependency drift.
       # Needs no JDK/Android SDK - `cap add android` only copies the platform.
       - run: bun scripts/cli-test.mjs

@@ -72,6 +72,18 @@ if (!manifest || manifest?.generator !== '@involvex/ionic-everywhere') {
 	process.exit(1)
 }
 
+// Validate the `ine` alias is present in completions output.
+const psCompletions = cliStdout(
+	['completions', 'powershell'],
+	'completions powershell',
+)
+if (!psCompletions.includes('ine')) {
+	console.error(
+		`cli:test FAILED - PowerShell completions did not mention "ine": ${psCompletions.slice(0, 200)}`,
+	)
+	process.exit(1)
+}
+
 // FEAT-027: actually building the scaffolded app catches dependency-drift
 // incidents early (skipped native optionals, missing transitive packages,
 // broken hoisting) before users ever see them.
