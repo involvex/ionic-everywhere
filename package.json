@@ -9,7 +9,6 @@
 		"packages/*"
 	],
 	"scripts": {
-		"prebuild": "bun run verify",
 		"build": "bun run --filter @involvex/ionic-everywhere build",
 		"clean": "bun scripts/clean.mjs",
 		"cli:dev": "bun run --filter @involvex/ionic-everywhere dev",

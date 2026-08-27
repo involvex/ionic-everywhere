@@ -1,44 +1,11 @@
 import {spawnSync} from 'node:child_process'
-import {existsSync, mkdirSync, readFileSync, readdirSync, rmSync} from 'node:fs'
+import {existsSync, readFileSync} from 'node:fs'
 import {join} from 'node:path'
+import {cli, cliStdout, prepareTarget} from './e2e-utils.mjs'
 
-// Windows: a previous run's target dir can be held (e.g. as a process cwd),
-// so use a unique per-run directory and clean stale ones best-effort.
-const base = '.test'
-try {
-	rmSync(base, {recursive: true, force: true})
-} catch {
-	// locked by another process; fall through and prune what we can
-}
-mkdirSync(base, {recursive: true})
-for (const entry of readdirSync(base)) {
-	try {
-		rmSync(join(base, entry), {recursive: true, force: true})
-	} catch {
-		// still locked; leave it
-	}
-}
-const stamp = `${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}-${Math.random().toString(36).slice(2, 7)}`
-const target = join(base, `demo-app-${stamp}`)
+const target = prepareTarget('demo-app')
 
-const result = spawnSync(
-	process.execPath,
-	[
-		'packages/ionic-everywhere/dist/cli.js',
-		'new',
-		target,
-		'--yes',
-		'--pm',
-		'bun',
-		'--no-git',
-	],
-	{stdio: 'inherit'},
-)
-
-if (result.status !== 0) {
-	console.error('cli:test FAILED - scaffold command exited non-zero')
-	process.exit(result.status ?? 1)
-}
+cli(['new', target, '--yes', '--pm', 'bun', '--no-git'], 'scaffold')
 
 const expected = [
 	join(target, 'package.json'),
@@ -57,8 +24,10 @@ if (missing.length > 0) {
 const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
 for (const script of [
 	'android',
+	'android:dev',
 	'preandroid',
 	'desktop',
+	'desktop:dev',
 	'predesktop',
 	'lint',
 	'typecheck',
@@ -89,23 +58,16 @@ if (existsSync(join(target, 'electron', 'bun.lock'))) {
 }
 
 // FEAT-034: exercise the `list` command end-to-end against the fresh project.
-const listed = spawnSync(
-	process.execPath,
-	['packages/ionic-everywhere/dist/cli.js', 'list', '--dir', target, '--json'],
-	{encoding: 'utf8'},
-)
+const listed = cliStdout(['list', '--dir', target, '--json'], 'list --json')
 let manifest
 try {
-	manifest = JSON.parse(listed.stdout)
+	manifest = JSON.parse(listed)
 } catch {
 	manifest = undefined
 }
-if (
-	listed.status !== 0 ||
-	manifest?.generator !== '@involvex/ionic-everywhere'
-) {
+if (!manifest || manifest?.generator !== '@involvex/ionic-everywhere') {
 	console.error(
-		`cli:test FAILED - "list --json" did not return the generator manifest: ${listed.stdout}`,
+		`cli:test FAILED - "list --json" did not return the generator manifest: ${listed}`,
 	)
 	process.exit(1)
 }

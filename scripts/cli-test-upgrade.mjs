@@ -1,55 +1,22 @@
-import {spawnSync} from 'node:child_process'
 import {
 	existsSync,
 	mkdirSync,
 	readFileSync,
-	readdirSync,
 	rmSync,
 	writeFileSync,
 } from 'node:fs'
 import {join} from 'node:path'
+import {cli, cliResult, prepareTarget} from './e2e-utils.mjs'
 
 // FEAT-029 end-to-end: scaffold -> age the project -> `upgrade --yes` ->
 // assert restoration. Runs without installs so it stays fast in CI; platform
 // dirs are materialized the way `cap add` would have left them.
-const base = '.test'
-try {
-	rmSync(base, {recursive: true, force: true})
-} catch {
-	// locked by another process; fall through and prune what we can
-}
-mkdirSync(base, {recursive: true})
-for (const entry of readdirSync(base)) {
-	try {
-		rmSync(join(base, entry), {recursive: true, force: true})
-	} catch {
-		// still locked; leave it
-	}
-}
-const stamp = `${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}-${Math.random().toString(36).slice(2, 7)}`
-const target = join(base, `upgrade-app-${stamp}`)
+const target = prepareTarget('upgrade-app')
 
-function cli(args, opts = {}) {
-	return spawnSync(
-		process.execPath,
-		['packages/ionic-everywhere/dist/cli.js', ...args],
-		{encoding: 'utf8', ...opts},
-	)
-}
-
-const scaffolded = cli([
-	'new',
-	target,
-	'--yes',
-	'--pm',
-	'bun',
-	'--no-git',
-	'--no-install',
-])
-if (scaffolded.status !== 0) {
-	console.error('cli-test-upgrade FAILED - scaffold exited non-zero')
-	process.exit(scaffolded.status ?? 1)
-}
+cli(
+	['new', target, '--yes', '--pm', 'bun', '--no-git', '--no-install'],
+	'scaffold',
+)
 
 // Post-scaffold state that `new` normally creates during `cap add`.
 mkdirSync(join(target, 'android'))
@@ -73,7 +40,7 @@ function readManifestJson() {
 }
 
 // Dry-run must not mutate anything.
-const dry = cli(['upgrade', '--dir', target, '--dry-run'])
+const dry = cliResult(['upgrade', '--dir', target, '--dry-run'])
 if (
 	dry.status !== 0 ||
 	existsSync(join(target, '.prettierrc.json')) ||
@@ -85,11 +52,7 @@ if (
 	process.exit(1)
 }
 
-const applied = cli(['upgrade', '--dir', target, '--yes'])
-if (applied.status !== 0) {
-	console.error(`cli-test-upgrade FAILED - upgrade exited non-zero`)
-	process.exit(applied.status ?? 1)
-}
+cli(['upgrade', '--dir', target, '--yes'], 'upgrade')
 
 const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
 if (!pkg.scripts['open:android']?.includes('cap open android')) {
@@ -119,7 +82,7 @@ if (!Array.isArray(pkg.workspaces) || !pkg.workspaces.includes('electron')) {
 }
 
 // Idempotency: a second run must report "already up to date" and exit 0.
-const second = cli(['upgrade', '--dir', target, '--yes'])
+const second = cliResult(['upgrade', '--dir', target, '--yes'])
 if (
 	second.status !== 0 ||
 	!`${second.stdout}${second.stderr}`.includes('Already up to date')
