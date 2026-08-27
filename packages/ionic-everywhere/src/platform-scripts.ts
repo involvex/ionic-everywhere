@@ -18,6 +18,7 @@ export const CAP_PLATFORM_NAMES = {
 export const CANONICAL_SCRIPTS: Record<string, string> = {
 	assets: 'npx @capacitor/assets generate --android --assetPath assets',
 	android: 'cap run android',
+	'android:dev': 'node scripts/android-dev.mjs',
 	preandroid: `npm run build && cap sync ${CAP_PLATFORM_NAMES.android}`,
 	'open:android': 'cap open android',
 	'build:android': `npm run build && cap sync ${CAP_PLATFORM_NAMES.android} && node scripts/gradle.mjs assembleDebug`,
@@ -30,6 +31,7 @@ export const CANONICAL_SCRIPTS: Record<string, string> = {
 const ANDROID_KEYS = [
 	'assets',
 	'android',
+	'android:dev',
 	'preandroid',
 	'open:android',
 	'build:android',

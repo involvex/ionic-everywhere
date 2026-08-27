@@ -237,6 +237,7 @@ const FULL_SCRIPTS = {
 	format: 'prettier --write .',
 	sync: 'npm run build && cap sync android && cap sync @capawesome/capacitor-electron',
 	android: 'cap run android',
+	'android:dev': 'node scripts/android-dev.mjs',
 	preandroid: 'npm run build && cap sync android',
 	'open:android': 'cap open android',
 	desktop: 'cd electron && npm run start',
@@ -359,6 +360,7 @@ describe('platform-scripts registry', () => {
 		const scripts = {...FULL_SCRIPTS}
 		delete scripts.assets
 		delete scripts.android
+		delete scripts['android:dev']
 		delete scripts.preandroid
 		delete scripts['open:android']
 		delete scripts['build:android']

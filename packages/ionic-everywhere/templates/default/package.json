@@ -8,6 +8,7 @@
 		"assets": "npx @capacitor/assets generate --android --assetPath assets",
 		"preandroid": "npm run build && cap sync android",
 		"android": "cap run android",
+		"android:dev": "node scripts/android-dev.mjs",
 		"build": "tsc --noEmit && vite build",
 		"build:all": "npm run build:android && npm run build:desktop",
 		"build:android": "npm run build && cap sync android && node scripts/gradle.mjs assembleDebug",
