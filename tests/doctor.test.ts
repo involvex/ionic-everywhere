@@ -80,8 +80,9 @@ describe('runChecks injection (FEAT-010)', () => {
 
 	it('prefers JAVA_HOME over PATH', () => {
 		const javaHome = makeTemp()
+		const javaExe = process.platform === 'win32' ? 'java.exe' : 'java'
 		mkdirSync(join(javaHome, 'bin'), {recursive: true})
-		writeFileSync(join(javaHome, 'bin', 'java.exe'), '')
+		writeFileSync(join(javaHome, 'bin', javaExe), '')
 		const probes: string[] = []
 		const checks = runChecks({
 			...baseInputs,
