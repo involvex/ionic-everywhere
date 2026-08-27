@@ -15,7 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        bun-version: [1.4.1, latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -23,19 +22,18 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         # Stable bun only - canary builds produce broken installs (AGENTS.md #10)
         with:
-          bun-version: ${{ matrix.bun-version }}
+          bun-version: 1.4.1
       - name: Cache bun install cache
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ matrix.bun-version }}-${{ hashFiles('bun.lock') }}
-          restore-keys: bun-${{ runner.os }}-${{ matrix.bun-version }}-
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
       - run: bun install --frozen-lockfile
       - run: bun run verify
       - run: bunx tsc -p packages/ionic-everywhere/tsconfig.json --noEmit
-      - run: bun run build
-      - name: Upload CLI dist (ubuntu only)
-        if: matrix.os == 'ubuntu-latest' && matrix.bun-version == '1.4.1'
+      - run: bun run --filter @involvex/ionic-everywhere build
+      - name: Upload CLI dist
         uses: actions/upload-artifact@v4
         with:
           name: cli-dist
