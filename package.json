@@ -26,6 +26,7 @@
 	"prettier": "@involvex/prettier-config",
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
+		"@involvex/prettier-config": "^0.0.6",
 		"@types/node": "^26.3.0",
 		"@vitest/coverage-v8": "^4.1.11",
 		"eslint": "^10.0.0",

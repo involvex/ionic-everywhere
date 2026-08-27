@@ -6,6 +6,7 @@
       "name": "ionic-everywhere-monorepo",
       "devDependencies": {
         "@eslint/js": "^10.0.1",
+        "@involvex/prettier-config": "^0.0.6",
         "@types/node": "^26.3.0",
         "@vitest/coverage-v8": "^4.1.11",
         "eslint": "^10.0.0",
@@ -133,6 +134,8 @@
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
 
     "@involvex/ionic-everywhere": ["@involvex/ionic-everywhere@workspace:packages/ionic-everywhere"],
+
+    "@involvex/prettier-config": ["@involvex/prettier-config@0.0.6", "", { "dependencies": { "prettier-plugin-markdown-html": "^1.4.0", "prettier-plugin-organize-imports": "^4.3.0", "prettier-plugin-packagejson": "^3.0.2", "prettier-plugin-prisma": "^5.0.0", "prettier-plugin-properties": "^0.3.1", "prettier-plugin-toml": "^2.0.6", "prettier-plugin-yaml": "^1.1.3" }, "peerDependencies": { "prettier": ">=3.8.2" } }, "sha512-57UdT0FQkdoWO9ROrBbUFUguAV4a2UmxqRjBa6DQ447CYmTRdwzrF6YkEkCH+cRmxc0TpcOe+PWvWHYhGjRBJg=="],
 
     "@jridgewell/resolve-uri": ["@jridgewell/resolve-uri@3.1.2", "", {}, "sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw=="],
 
