@@ -30,6 +30,7 @@ jobs:
               https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-windows-x64.zip
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
             mv /tmp/bun-extract/bun-windows-x64/bun.exe ~/.bun/bin/bun.exe
+            mv /tmp/bun-extract/bun-windows-x64/bunx.exe ~/.bun/bin/bunx.exe
             rm -rf /tmp/bun.zip /tmp/bun-extract
           else
             curl -fsSL -o /tmp/bun.zip \
@@ -37,8 +38,9 @@ jobs:
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
             mkdir -p ~/.bun/bin
             mv /tmp/bun-extract/bun-linux-x64/bun ~/.bun/bin/bun
+            mv /tmp/bun-extract/bun-linux-x64/bunx ~/.bun/bin/bunx
             rm -rf /tmp/bun.zip /tmp/bun-extract
-            chmod +x ~/.bun/bin/bun
+            chmod +x ~/.bun/bin/bun ~/.bun/bin/bunx
           fi
           echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
           "$HOME/.bun/bin/bun" --version
@@ -79,6 +81,7 @@ jobs:
               https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-windows-x64.zip
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
             mv /tmp/bun-extract/bun-windows-x64/bun.exe ~/.bun/bin/bun.exe
+            mv /tmp/bun-extract/bun-windows-x64/bunx.exe ~/.bun/bin/bunx.exe
             rm -rf /tmp/bun.zip /tmp/bun-extract
           else
             curl -fsSL -o /tmp/bun.zip \
@@ -86,8 +89,9 @@ jobs:
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
             mkdir -p ~/.bun/bin
             mv /tmp/bun-extract/bun-linux-x64/bun ~/.bun/bin/bun
+            mv /tmp/bun-extract/bun-linux-x64/bunx ~/.bun/bin/bunx
             rm -rf /tmp/bun.zip /tmp/bun-extract
-            chmod +x ~/.bun/bin/bun
+            chmod +x ~/.bun/bin/bun ~/.bun/bin/bunx
           fi
           echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
           "$HOME/.bun/bin/bun" --version
