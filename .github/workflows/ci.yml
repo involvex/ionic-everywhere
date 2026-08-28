@@ -26,13 +26,12 @@ jobs:
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
             mkdir -p "$HOME/.bun/bin"
-            curl.exe -fsSL -o /tmp/bun.zip ^
+            curl.exe -fsSL -o /tmp/bun.zip \
               https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-windows-x64.zip
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
             mv /tmp/bun-extract/bun-windows-x64/bun.exe "$HOME/.bun/bin/bun.exe"
             cp /tmp/bun-extract/bun-windows-x64/bunx.exe "$HOME/.bun/bin/bunx.exe" 2>/dev/null || true
             rm -rf /tmp/bun.zip /tmp/bun-extract
-            setx PATH "%USERPROFILE%\.bun\bin;%PATH%" >/dev/null 2>&1 || true
           else
             curl -fsSL -o /tmp/bun.zip \
               https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-linux-x64.zip
@@ -79,13 +78,12 @@ jobs:
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
             mkdir -p "$HOME/.bun/bin"
-            curl.exe -fsSL -o /tmp/bun.zip ^
+            curl.exe -fsSL -o /tmp/bun.zip \
               https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-windows-x64.zip
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
             mv /tmp/bun-extract/bun-windows-x64/bun.exe "$HOME/.bun/bin/bun.exe"
             cp /tmp/bun-extract/bun-windows-x64/bunx.exe "$HOME/.bun/bin/bunx.exe" 2>/dev/null || true
             rm -rf /tmp/bun.zip /tmp/bun-extract
-            setx PATH "%USERPROFILE%\.bun\bin;%PATH%" >/dev/null 2>&1 || true
           else
             curl -fsSL -o /tmp/bun.zip \
               https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-linux-x64.zip
