@@ -1,5 +1,10 @@
 name: CI
 
+env:
+  # Absolute path to bun so run.ts can inject it into cmd.exe PATH on Windows
+  BUN_BIN: ${{ env.HOME }}/.bun/bin/bun
+  PATH: ${{ env.HOME }}/.bun/bin${{ ':${PATH}' if runner.os == 'Windows' else ':${PATH}' }}
+
 on:
   push:
     branches: [main]
@@ -25,13 +30,14 @@ jobs:
       - name: Install Bun
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            mkdir -p ~/.bun/bin
-            curl -fsSL -o /tmp/bun.zip \
+            mkdir -p "$HOME/.bun/bin"
+            curl.exe -fsSL -o /tmp/bun.zip ^
               https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-windows-x64.zip
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
-            mv /tmp/bun-extract/bun-windows-x64/bun.exe ~/.bun/bin/bun.exe
-            cp /tmp/bun-extract/bun-windows-x64/bunx.exe ~/.bun/bin/bunx.exe 2>/dev/null || true
+            mv /tmp/bun-extract/bun-windows-x64/bun.exe "$HOME/.bun/bin/bun.exe"
+            cp /tmp/bun-extract/bun-windows-x64/bunx.exe "$HOME/.bun/bin/bunx.exe" 2>/dev/null || true
             rm -rf /tmp/bun.zip /tmp/bun-extract
+            setx PATH "%USERPROFILE%\.bun\bin;%PATH%" >/dev/null 2>&1 || true
           else
             curl -fsSL -o /tmp/bun.zip \
               https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-linux-x64.zip
@@ -76,13 +82,14 @@ jobs:
       - name: Install Bun
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            mkdir -p ~/.bun/bin
-            curl -fsSL -o /tmp/bun.zip \
+            mkdir -p "$HOME/.bun/bin"
+            curl.exe -fsSL -o /tmp/bun.zip ^
               https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-windows-x64.zip
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
-            mv /tmp/bun-extract/bun-windows-x64/bun.exe ~/.bun/bin/bun.exe
-            cp /tmp/bun-extract/bun-windows-x64/bunx.exe ~/.bun/bin/bunx.exe 2>/dev/null || true
+            mv /tmp/bun-extract/bun-windows-x64/bun.exe "$HOME/.bun/bin/bun.exe"
+            cp /tmp/bun-extract/bun-windows-x64/bunx.exe "$HOME/.bun/bin/bunx.exe" 2>/dev/null || true
             rm -rf /tmp/bun.zip /tmp/bun-extract
+            setx PATH "%USERPROFILE%\.bun\bin;%PATH%" >/dev/null 2>&1 || true
           else
             curl -fsSL -o /tmp/bun.zip \
               https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-linux-x64.zip

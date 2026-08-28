@@ -1,6 +1,11 @@
 import {spawn} from 'node:child_process'
-import {createWriteStream, mkdirSync, type WriteStream} from 'node:fs'
-import {dirname} from 'node:path'
+import {
+	createWriteStream,
+	existsSync,
+	mkdirSync,
+	type WriteStream,
+} from 'node:fs'
+import {delimiter, dirname, join} from 'node:path'
 import {createInterface} from 'node:readline'
 
 export interface RunResult {
@@ -31,7 +36,21 @@ export function runStreaming(
 	}
 
 	return new Promise(resolve => {
-		const child = spawn(cmd, {cwd, shell: true})
+		const bunBin = process.env.BUN_BIN
+		let env: Record<string, string> | undefined
+		if (bunBin) {
+			const binDir = dirname(bunBin)
+			const homeBin = join(process.env.HOME ?? '.', '.bun', 'bin')
+			const pathEntries = (process.env.PATH ?? '')
+				.split(delimiter)
+				.filter(Boolean)
+			if (!pathEntries.includes(binDir) && existsSync(binDir)) {
+				env = {...process.env, PATH: [binDir, ...pathEntries].join(delimiter)}
+			} else if (!pathEntries.includes(homeBin) && existsSync(homeBin)) {
+				env = {...process.env, PATH: [homeBin, ...pathEntries].join(delimiter)}
+			}
+		}
+		const child = spawn(cmd, {cwd, shell: true, env})
 		const push = (line: string) => {
 			if (line.length === 0) return
 			tail.push(line)
