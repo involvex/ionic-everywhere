@@ -24,13 +24,13 @@ jobs:
           if [ "${{ runner.os }}" = "Windows" ]; then
             mkdir -p ~/.bun/bin
             curl -fsSL -o /tmp/bun.zip \
-              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-windows-x64.zip
+              https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-windows-x64.zip
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
             mv /tmp/bun-extract/bun-windows-x64/bun.exe ~/.bun/bin/bun.exe
             rm -rf /tmp/bun.zip /tmp/bun-extract
           else
             curl -fsSL -o /tmp/bun.zip \
-              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-linux-x64.zip
+              https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-linux-x64.zip
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
             mkdir -p ~/.bun/bin
             mv /tmp/bun-extract/bun-linux-x64/bun ~/.bun/bin/bun
@@ -70,13 +70,13 @@ jobs:
           if [ "${{ runner.os }}" = "Windows" ]; then
             mkdir -p ~/.bun/bin
             curl -fsSL -o /tmp/bun.zip \
-              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-windows-x64.zip
+              https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-windows-x64.zip
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
             mv /tmp/bun-extract/bun-windows-x64/bun.exe ~/.bun/bin/bun.exe
             rm -rf /tmp/bun.zip /tmp/bun-extract
           else
             curl -fsSL -o /tmp/bun.zip \
-              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-linux-x64.zip
+              https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-linux-x64.zip
             python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
             mkdir -p ~/.bun/bin
             mv /tmp/bun-extract/bun-linux-x64/bun ~/.bun/bin/bun
