@@ -6,7 +6,7 @@ updates:
       interval: weekly
     groups:
       actions:
-        patterns: ["*"]
+        patterns: ['*']
 
   - package-ecosystem: npm
     directory: /
@@ -17,4 +17,4 @@ updates:
       # TypeScript is pinned to ^5.9.3 (see AGENTS.md); TS 7 native
       # binary uses per-platform optionalDeps that bun silently skips.
       - dependency-name: typescript
-        update-types: ["version-update:semver-major"]
+        update-types: [version-update:semver-major]
