@@ -22,17 +22,23 @@ jobs:
       - name: Install Bun
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            if command -v pwsh >/dev/null 2>&1; then
-              pwsh -NoLogo -NoProfile -Command '$null = iex "& {irm bun.sh/install.ps1} -Version 1.4.1"'
-            else
-              powershell -NoLogo -NoProfile -Command '$null = iex "& {irm bun.sh/install.ps1} -Version 1.4.1"'
-            fi
+            mkdir -p ~/.bun/bin
+            curl -fsSL -o /tmp/bun.zip \
+              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-windows-x64.zip
+            python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
+            mv /tmp/bun-extract/bun-windows-x64/bun.exe ~/.bun/bin/bun.exe
+            rm -rf /tmp/bun.zip /tmp/bun-extract
           else
-            curl -fsSL https://bun.sh/install | bash -s -- "1.4.1"
+            curl -fsSL -o /tmp/bun.zip \
+              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-linux-x64.zip
+            python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
+            mkdir -p ~/.bun/bin
+            mv /tmp/bun-extract/bun-linux-x64/bun ~/.bun/bin/bun
+            rm -rf /tmp/bun.zip /tmp/bun-extract
+            chmod +x ~/.bun/bin/bun
           fi
-          BUN_PATH="$HOME/.bun/bin"
-          echo "$BUN_PATH" >> "$GITHUB_PATH"
-          "$BUN_PATH/bun" --version
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          "$HOME/.bun/bin/bun" --version
         shell: bash
       - name: Cache bun install cache
         uses: actions/cache@v5
@@ -62,17 +68,23 @@ jobs:
       - name: Install Bun
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            if command -v pwsh >/dev/null 2>&1; then
-              pwsh -NoLogo -NoProfile -Command '$null = iex "& {irm bun.sh/install.ps1} -Version 1.4.1"'
-            else
-              powershell -NoLogo -NoProfile -Command '$null = iex "& {irm bun.sh/install.ps1} -Version 1.4.1"'
-            fi
+            mkdir -p ~/.bun/bin
+            curl -fsSL -o /tmp/bun.zip \
+              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-windows-x64.zip
+            python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
+            mv /tmp/bun-extract/bun-windows-x64/bun.exe ~/.bun/bin/bun.exe
+            rm -rf /tmp/bun.zip /tmp/bun-extract
           else
-            curl -fsSL https://bun.sh/install | bash -s -- "1.4.1"
+            curl -fsSL -o /tmp/bun.zip \
+              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-linux-x64.zip
+            python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
+            mkdir -p ~/.bun/bin
+            mv /tmp/bun-extract/bun-linux-x64/bun ~/.bun/bin/bun
+            rm -rf /tmp/bun.zip /tmp/bun-extract
+            chmod +x ~/.bun/bin/bun
           fi
-          BUN_PATH="$HOME/.bun/bin"
-          echo "$BUN_PATH" >> "$GITHUB_PATH"
-          "$BUN_PATH/bun" --version
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          "$HOME/.bun/bin/bun" --version
         shell: bash
       - name: Cache bun install cache
         uses: actions/cache@v5
