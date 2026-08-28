@@ -87,7 +87,7 @@ if (!psCompletions.includes('ine')) {
 // FEAT-027: actually building the scaffolded app catches dependency-drift
 // incidents early (skipped native optionals, missing transitive packages,
 // broken hoisting) before users ever see them.
-const webBuild = spawnSync('bun', ['run', 'build'], {
+const webBuild = spawnSync(process.execPath, ['run', 'build'], {
 	cwd: target,
 	stdio: 'inherit',
 })
