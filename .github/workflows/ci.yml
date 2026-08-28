@@ -20,18 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install Bun
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            curl -fsSL -o /tmp/bun.zip \
-              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-windows-x64.zip
-            mkdir -p ~/.bun/bin
-            tar -xf /tmp/bun.zip -C ~/.bun/bin/
-          else
-            curl -fsSL https://bun.sh/install | bash
-          fi
-          BUN_PATH="$HOME/.bun/bin"
-          echo "$BUN_PATH" >> "$GITHUB_PATH"
-          "$BUN_PATH/bun" --version
+        run: BUN_INSTALL_VERSION=1.4.1 curl -fsSL https://bun.sh/install | bash && echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
         shell: bash
       - name: Cache bun install cache
         uses: actions/cache@v5
@@ -50,8 +39,6 @@ jobs:
 
   scaffold-smoke:
     needs: lint-test
-    # FEAT-035: run on both OSes - path/PATHEXT regressions (gradlew, where.exe
-    # probes) previously shipped undetected with an ubuntu-only smoke job.
     strategy:
       fail-fast: false
       matrix:
@@ -61,18 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install Bun
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            curl -fsSL -o /tmp/bun.zip \
-              https://github.com/oven-sh/bun/releases/download/bun-v1.4.1/bun-windows-x64.zip
-            mkdir -p ~/.bun/bin
-            tar -xf /tmp/bun.zip -C ~/.bun/bin/
-          else
-            curl -fsSL https://bun.sh/install | bash
-          fi
-          BUN_PATH="$HOME/.bun/bin"
-          echo "$BUN_PATH" >> "$GITHUB_PATH"
-          "$BUN_PATH/bun" --version
+        run: BUN_INSTALL_VERSION=1.4.1 curl -fsSL https://bun.sh/install | bash && echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
         shell: bash
       - name: Cache bun install cache
         uses: actions/cache@v5
@@ -86,9 +62,7 @@ jobs:
           name: cli-dist
           path: packages/ionic-everywhere/dist/
       - run: bun install --frozen-lockfile
-      # End-to-end: scaffold web+android+desktop app, assert output,
-      # then web-build the result (FEAT-027) to catch dependency drift.
-      # Needs no JDK/Android SDK - `cap add android` only copies the platform.
-      - run: bun scripts/cli-test.mjs
-      # FEAT-029: age a fresh scaffold, `upgrade --yes`, assert restoration.
-      - run: bun scripts/cli-test-upgrade.mjs
+      - name: CLI smoke: scaffold + build
+        run: bun scripts/cli-test.mjs
+      - name: CLI smoke: upgrade round-trip
+        run: bun scripts/cli-test-upgrade.mjs
