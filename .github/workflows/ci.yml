@@ -1,10 +1,5 @@
 name: CI
 
-env:
-  # Absolute path to bun so run.ts can inject it into cmd.exe PATH on Windows
-  BUN_BIN: ${{ env.HOME }}/.bun/bin/bun
-  PATH: ${{ env.HOME }}/.bun/bin${{ ':${PATH}' if runner.os == 'Windows' else ':${PATH}' }}
-
 on:
   push:
     branches: [main]
@@ -49,6 +44,7 @@ jobs:
             chmod +x ~/.bun/bin/bun ~/.bun/bin/bunx 2>/dev/null || true
           fi
           echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          echo "BUN_BIN=$HOME/.bun/bin/bun" >> "$GITHUB_ENV"
           "$HOME/.bun/bin/bun" --version
         shell: bash
       - name: Cache bun install cache
@@ -101,6 +97,7 @@ jobs:
             chmod +x ~/.bun/bin/bun ~/.bun/bin/bunx 2>/dev/null || true
           fi
           echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          echo "BUN_BIN=$HOME/.bun/bin/bun" >> "$GITHUB_ENV"
           "$HOME/.bun/bin/bun" --version
         shell: bash
       - name: Cache bun install cache
