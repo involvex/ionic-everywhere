@@ -11,6 +11,9 @@ concurrency:
 
 jobs:
   lint-test:
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -56,6 +59,9 @@ jobs:
           retention-days: 1
 
   scaffold-smoke:
+    defaults:
+      run:
+        shell: bash
     needs: lint-test
     strategy:
       fail-fast: false
