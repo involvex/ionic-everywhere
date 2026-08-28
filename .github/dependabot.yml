@@ -1,39 +1,20 @@
 version: 2
 updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
-    labels:
-      - dependencies
-    groups:
-      vitest:
-        patterns:
-          - vitest
-          - '@vitest/*'
-      eslint:
-        patterns:
-          - eslint
-          - '@eslint/*'
-          - typescript-eslint
-      prettier:
-        patterns:
-          - prettier
-          - prettier-plugin-*
-      ionic:
-        patterns:
-          - '@ionic/*'
-      capacitor:
-        patterns:
-          - '@capacitor/*'
-          - '@capawesome/*'
-
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - ci
+    ignore:
+      # TypeScript is pinned to ^5.9.3 (see AGENTS.md); TS 7 native
+      # binary uses per-platform optionalDeps that bun silently skips.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
