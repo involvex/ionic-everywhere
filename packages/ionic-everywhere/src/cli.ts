@@ -62,6 +62,12 @@ Options:
   --no-git            Skip git init
    --tests             (new) Add a Vitest testing scaffold to the generated app
                        (interactive default: yes; --yes default: no)
+   --layout <tabs|drawer|sidebar>
+                       Navigation layout style (default: tabs)
+   --styling <ionic-css|tailwind|shadcn|kumo>
+                       Styling engine / framework (default: ionic-css)
+   --theme <light-dark|hacker|monokai>
+                       Color theme (default: light-dark)
    --keystore <path>   (sign) Path to the release keystore file (.jks or .keystore)
    --store-pass <pass> (sign) Password for the keystore
    --key-alias <alias> (sign) Alias for the private key
@@ -125,6 +131,9 @@ async function main(): Promise<number> {
 				keepOnFailure: flags['keep-on-failure'] === true,
 				template:
 					typeof flags.template === 'string' ? flags.template : undefined,
+				layout: typeof flags.layout === 'string' ? flags.layout : undefined,
+				styling: typeof flags.styling === 'string' ? flags.styling : undefined,
+				theme: typeof flags.theme === 'string' ? flags.theme : undefined,
 				yes: flags.yes === true,
 			}
 			return runNew(opts)

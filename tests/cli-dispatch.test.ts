@@ -95,8 +95,11 @@ describe('resolveConfig precedence', () => {
 				if (message.startsWith('Application ID')) return 'com.x.asked'
 				throw new Error(`unexpected text prompt: ${message}`)
 			},
-			select: async () => {
-				calls.push('select-pm')
+			select: async message => {
+				calls.push(message)
+				if (message.includes('layout')) return 'tabs'
+				if (message.includes('Styling')) return 'ionic-css'
+				if (message.includes('theme')) return 'light-dark'
 				return 'yarn'
 			},
 			confirm: async () => {
@@ -122,7 +125,12 @@ describe('resolveConfig precedence', () => {
 				if (message.startsWith('Application ID')) return ''
 				throw new Error(`unexpected text prompt: ${message}`)
 			},
-			select: async () => 'bun',
+			select: async message => {
+				if (message.includes('layout')) return 'tabs'
+				if (message.includes('Styling')) return 'ionic-css'
+				if (message.includes('theme')) return 'light-dark'
+				return 'bun'
+			},
 			confirm: async () => true,
 		}
 		const cfg = await resolveConfig(

@@ -4,6 +4,7 @@ export default defineConfig({
 	test: {
 		include: ['tests/**/*.test.ts'],
 		environment: 'node',
+		testTimeout: 20000,
 		coverage: {
 			provider: 'v8',
 			include: ['packages/ionic-everywhere/src/**/*.ts'],

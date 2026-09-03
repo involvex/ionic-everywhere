@@ -33,6 +33,9 @@ export interface NewOptions {
 	tests?: boolean
 	keepOnFailure?: boolean
 	template?: string
+	layout?: string
+	styling?: string
+	theme?: string
 	yes: boolean
 }
 
@@ -49,7 +52,19 @@ interface ResolvedConfig {
 	git: boolean
 	tests: boolean
 	templateVariant: string
+	layout: string
+	styling: string
+	theme: string
 }
+
+export const VALID_LAYOUTS = ['tabs', 'drawer', 'sidebar'] as const
+export const VALID_STYLING = [
+	'ionic-css',
+	'tailwind',
+	'shadcn',
+	'kumo',
+] as const
+export const VALID_THEMES = ['light-dark', 'hacker', 'monokai'] as const
 
 function die(msg: string): never {
 	p.log.error(msg)
@@ -57,13 +72,16 @@ function die(msg: string): never {
 }
 
 export interface ValidationFinding {
-	field: 'pm' | 'appId' | 'appName'
+	field: 'pm' | 'appId' | 'appName' | 'layout' | 'styling' | 'theme'
 	fatal: boolean
 	message: string
 }
 
 export function validateNewOptions(
-	opts: Pick<NewOptions, 'appId' | 'appName' | 'pm' | 'yes'>,
+	opts: Pick<
+		NewOptions,
+		'appId' | 'appName' | 'pm' | 'layout' | 'styling' | 'theme' | 'yes'
+	>,
 ): ValidationFinding[] {
 	const findings: ValidationFinding[] = []
 	if (opts.pm !== undefined && !isValidPm(opts.pm)) {
@@ -71,6 +89,36 @@ export function validateNewOptions(
 			field: 'pm',
 			fatal: true,
 			message: `Unsupported --pm "${opts.pm}". Choose one of: ${VALID_PMS.join(', ')}`,
+		})
+	}
+	if (
+		opts.layout !== undefined &&
+		!(VALID_LAYOUTS as readonly string[]).includes(opts.layout)
+	) {
+		findings.push({
+			field: 'layout',
+			fatal: true,
+			message: `Unsupported --layout "${opts.layout}". Choose one of: ${VALID_LAYOUTS.join(', ')}`,
+		})
+	}
+	if (
+		opts.styling !== undefined &&
+		!(VALID_STYLING as readonly string[]).includes(opts.styling)
+	) {
+		findings.push({
+			field: 'styling',
+			fatal: true,
+			message: `Unsupported --styling "${opts.styling}". Choose one of: ${VALID_STYLING.join(', ')}`,
+		})
+	}
+	if (
+		opts.theme !== undefined &&
+		!(VALID_THEMES as readonly string[]).includes(opts.theme)
+	) {
+		findings.push({
+			field: 'theme',
+			fatal: true,
+			message: `Unsupported --theme "${opts.theme}". Choose one of: ${VALID_THEMES.join(', ')}`,
 		})
 	}
 	if (opts.appId !== undefined && !isValidAppId(opts.appId)) {
@@ -200,6 +248,9 @@ export async function resolveConfig(
 	let pm = opts.pm ?? ''
 	let git = opts.git
 	let tests = opts.tests
+	let layout = opts.layout ?? ''
+	let styling = opts.styling ?? ''
+	let theme = opts.theme ?? ''
 
 	if (!opts.yes && interactive) {
 		if (!appName) {
@@ -238,6 +289,40 @@ export async function resolveConfig(
 				],
 			})
 		}
+		if (!layout) {
+			layout = await prompts.select('Navigation layout style?', {
+				initialValue: 'tabs',
+				options: [
+					{value: 'tabs', label: 'Tabs + Sidebar (default)'},
+					{value: 'drawer', label: 'Drawer menu'},
+					{value: 'sidebar', label: 'Persistent sidebar'},
+				],
+			})
+		}
+		if (!styling) {
+			styling = await prompts.select('Styling engine / framework?', {
+				initialValue: 'ionic-css',
+				options: [
+					{value: 'ionic-css', label: 'Ionic CSS (default)'},
+					{value: 'tailwind', label: 'Tailwind CSS'},
+					{value: 'shadcn', label: 'shadcn/ui + Tailwind'},
+					{
+						value: 'kumo',
+						label: 'Cloudflare Kumo (https://github.com/cloudflare/kumo)',
+					},
+				],
+			})
+		}
+		if (!theme) {
+			theme = await prompts.select('Color theme?', {
+				initialValue: 'light-dark',
+				options: [
+					{value: 'light-dark', label: 'Light + Dark toggle (default)'},
+					{value: 'hacker', label: 'Hacker (green on black)'},
+					{value: 'monokai', label: 'Monokai (dark)'},
+				],
+			})
+		}
 		if (opts.git && git !== false) {
 			git = await prompts.confirm('Initialize a git repository?', true)
 		}
@@ -249,6 +334,12 @@ export async function resolveConfig(
 	if (!appName) appName = toTitle(kebabDefault)
 	if (!appId || !isValidAppId(appId)) appId = deriveAppId(kebabDefault)
 	if (!pm) pm = detectPm()
+	if (!layout || !(VALID_LAYOUTS as readonly string[]).includes(layout))
+		layout = 'tabs'
+	if (!styling || !(VALID_STYLING as readonly string[]).includes(styling))
+		styling = 'ionic-css'
+	if (!theme || !(VALID_THEMES as readonly string[]).includes(theme))
+		theme = 'light-dark'
 	if (git === undefined) git = opts.git
 
 	return {
@@ -264,6 +355,9 @@ export async function resolveConfig(
 		git: git ?? true,
 		tests: tests ?? false,
 		templateVariant: opts.template === 'minimal' ? 'minimal' : 'default',
+		layout,
+		styling,
+		theme,
 	}
 }
 
@@ -316,6 +410,9 @@ export async function runNew(
 	p.log.info(`Target : ${cfg.targetDir}`)
 	p.log.info(`App ID : ${cfg.appId}`)
 	p.log.info(`PM     : ${cfg.pm}`)
+	p.log.info(`Layout : ${cfg.layout}`)
+	p.log.info(`Styling: ${cfg.styling}`)
+	p.log.info(`Theme  : ${cfg.theme}`)
 	const targets = [
 		'web',
 		...(cfg.android ? ['android'] : []),

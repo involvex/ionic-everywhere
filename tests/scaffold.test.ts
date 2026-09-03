@@ -671,3 +671,29 @@ describe('data-driven nav model + ErrorBoundary (FEAT-008/020)', () => {
 		).toBe(true)
 	})
 })
+
+describe('interactive scaffolding options (layout, styling, theme)', () => {
+	it('scaffolds with drawer layout, tailwind styling and hacker theme', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Custom App',
+			appId: 'io.x.custom',
+			nameKebab: 'custom-app',
+			layout: 'drawer',
+			styling: 'tailwind',
+			theme: 'hacker',
+		})
+		expect(existsSync(join(target, 'tailwind.config.ts'))).toBe(true)
+		expect(existsSync(join(target, 'postcss.config.cjs'))).toBe(true)
+		expect(existsSync(join(target, 'src', 'theme', 'hacker.css'))).toBe(true)
+		const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+		expect(pkg.devDependencies.tailwindcss).toBeDefined()
+		const manifest = JSON.parse(
+			readFileSync(join(target, MANIFEST_NAME), 'utf8'),
+		)
+		expect(manifest.options.layout).toBe('drawer')
+		expect(manifest.options.styling).toBe('tailwind')
+		expect(manifest.options.theme).toBe('hacker')
+	})
+})

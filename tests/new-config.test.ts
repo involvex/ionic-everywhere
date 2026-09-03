@@ -10,15 +10,33 @@ const base = {
 }
 
 describe('validateNewOptions', () => {
-	it('accepts fully valid options', () => {
+	it('accepts valid layout, styling and theme options', () => {
 		expect(
 			validateNewOptions({
 				...base,
-				pm: 'bun',
-				appId: 'com.example.myapp',
-				appName: 'My App',
+				layout: 'drawer',
+				styling: 'tailwind',
+				theme: 'hacker',
 			}),
 		).toEqual([])
+	})
+
+	it('rejects unsupported layout, styling and theme options fatally', () => {
+		for (const layout of ['invalid', 'split']) {
+			const findings = validateNewOptions({...base, layout})
+			expect(findings).toHaveLength(1)
+			expect(findings[0]).toMatchObject({field: 'layout', fatal: true})
+		}
+		for (const styling of ['bootstrap', 'bulma']) {
+			const findings = validateNewOptions({...base, styling})
+			expect(findings).toHaveLength(1)
+			expect(findings[0]).toMatchObject({field: 'styling', fatal: true})
+		}
+		for (const theme of ['neon', 'pastel']) {
+			const findings = validateNewOptions({...base, theme})
+			expect(findings).toHaveLength(1)
+			expect(findings[0]).toMatchObject({field: 'theme', fatal: true})
+		}
 	})
 
 	it('accepts undefined optional fields', () => {

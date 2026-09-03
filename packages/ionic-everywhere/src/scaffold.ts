@@ -25,6 +25,9 @@ export interface ScaffoldOptions {
 	tests?: boolean
 	/** Template variant ('default' / 'full' or 'minimal'). */
 	templateVariant?: string
+	layout?: string
+	styling?: string
+	theme?: string
 }
 
 export const MANIFEST_NAME = '.ionic-everywhere.json'
@@ -226,6 +229,82 @@ export function applyTestingScaffold(
  * last so it reflects the final state after script rewriting and testing-
  * scaffold pruning. `schema` lets future upgrade tooling evolve the shape.
  */
+export function overlayDir(type: string, name: string): string {
+	return join(
+		dirname(fileURLToPath(import.meta.url)),
+		'..',
+		'templates',
+		'overlays',
+		`${type}-${name}`,
+	)
+}
+
+export function applyOverlays(targetDir: string, opts: ScaffoldOptions): void {
+	if (opts.layout && opts.layout !== 'tabs') {
+		const src = overlayDir('layout', opts.layout)
+		if (existsSync(src)) {
+			cpSync(src, targetDir, {recursive: true, force: true})
+		}
+	}
+	if (opts.styling && opts.styling !== 'ionic-css') {
+		const src = overlayDir('style', opts.styling)
+		if (existsSync(src)) {
+			cpSync(src, targetDir, {recursive: true, force: true})
+		}
+	}
+	if (opts.theme && opts.theme !== 'light-dark') {
+		const src = overlayDir('theme', opts.theme)
+		if (existsSync(src)) {
+			cpSync(src, targetDir, {recursive: true, force: true})
+		}
+	}
+}
+
+const STYLING_DEV_DEPS: Record<string, Record<string, string>> = {
+	tailwind: {
+		tailwindcss: '^4.0.0',
+		postcss: '^8.5.3',
+		autoprefixer: '^10.4.20',
+	},
+	shadcn: {
+		tailwindcss: '^4.0.0',
+		postcss: '^8.5.3',
+		autoprefixer: '^10.4.20',
+		clsx: '^2.1.1',
+		'tailwind-merge': '^3.0.1',
+	},
+	kumo: {
+		'@cloudflare/kumo': '^0.1.0',
+	},
+}
+
+export function applyStylingScaffold(
+	targetDir: string,
+	pkgPath: string,
+	styling?: string,
+): void {
+	if (!styling || styling === 'ionic-css') return
+	const deps = STYLING_DEV_DEPS[styling]
+	if (!deps) return
+	if (!existsSync(pkgPath)) return
+	const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
+		devDependencies?: Record<string, string>
+		dependencies?: Record<string, string>
+	}
+	if (styling === 'kumo') {
+		pkg.dependencies = {
+			...(pkg.dependencies ?? {}),
+			...deps,
+		}
+	} else {
+		pkg.devDependencies = {
+			...(pkg.devDependencies ?? {}),
+			...deps,
+		}
+	}
+	writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
+}
+
 export function writeGeneratorManifest(opts: ScaffoldOptions): void {
 	const manifest = {
 		schema: 1,
@@ -240,6 +319,9 @@ export function writeGeneratorManifest(opts: ScaffoldOptions): void {
 			android: opts.android ?? true,
 			electron: opts.electron ?? true,
 			tests: opts.tests ?? false,
+			layout: opts.layout ?? 'tabs',
+			styling: opts.styling ?? 'ionic-css',
+			theme: opts.theme ?? 'light-dark',
 		},
 	}
 	writeFileSync(
@@ -251,6 +333,7 @@ export function writeGeneratorManifest(opts: ScaffoldOptions): void {
 export function scaffold(opts: ScaffoldOptions): string[] {
 	assertEmptyTarget(opts.targetDir)
 	cpSync(templateDir(opts.templateVariant), opts.targetDir, {recursive: true})
+	applyOverlays(opts.targetDir, opts)
 	const written = tokenizeCopiedTree(opts.targetDir, opts)
 	const pkgPath = join(opts.targetDir, 'package.json')
 	if (opts.pm && opts.pm !== 'npm' && existsSync(pkgPath)) {
@@ -261,6 +344,7 @@ export function scaffold(opts: ScaffoldOptions): string[] {
 		writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
 	}
 	applyTestingScaffold(opts.targetDir, pkgPath, opts.tests, opts.pm)
+	applyStylingScaffold(opts.targetDir, pkgPath, opts.styling)
 	writeGeneratorManifest(opts)
 	return written
 }
