@@ -160,6 +160,26 @@ if (
 	process.exit(1)
 }
 
+// Exercise `build` validation and execution against the target.
+const buildBadPlatform = cliResult([
+	'build',
+	'--dir',
+	target,
+	'--platform',
+	'invalid-target',
+])
+if (
+	buildBadPlatform.status === 0 ||
+	!`${buildBadPlatform.stdout}${buildBadPlatform.stderr}`.includes(
+		'Unknown platform',
+	)
+) {
+	console.error(
+		`cli:test FAILED - invalid build platform was not rejected:\n${buildBadPlatform.stdout}\n${buildBadPlatform.stderr}`,
+	)
+	process.exit(1)
+}
+
 console.log(
 	'cli:test OK - scaffolded web + android + desktop into .test/demo-app',
 )

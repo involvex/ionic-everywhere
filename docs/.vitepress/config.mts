@@ -34,6 +34,7 @@ export default defineConfig({
 				items: [
 					{text: 'Overview', link: '/cli/'},
 					{text: 'new', link: '/cli/new'},
+					{text: 'build', link: '/cli/build'},
 					{text: 'add', link: '/cli/add'},
 					{text: 'upgrade', link: '/cli/upgrade'},
 					{text: 'sign', link: '/cli/sign'},

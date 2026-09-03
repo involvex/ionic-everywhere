@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs'
 import {dirname, join} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {runAdd, type AddOptions} from './add'
+import {runBuild, type BuildOptions} from './build-cmd'
 import {generateCompletions} from './completions'
 import {defaultAction} from './dispatch'
 import {allRequiredOk, formatReport, runChecks} from './doctor'
@@ -35,6 +36,7 @@ Usage:
    ionic-everywhere upgrade               Bring an existing project's tooling
                                            up to the current template (scripts,
                                            new template files, manifest)
+   ionic-everywhere build                 Run project build scripts (defaults to build:all)
    ionic-everywhere sign                  Build and sign a release APK for Android
    ionic-everywhere completions <shell>   Generate shell tab completions
                                            (powershell, bash, zsh, fish)
@@ -46,7 +48,9 @@ Options:
   --app-id <id>       Reverse-DNS application id (e.g. com.example.myapp)
   --pm <bun|npm|pnpm|yarn>
                       Package manager for the generated project
-  --dir <path>        (add, list, upgrade) Project directory (defaults to cwd)
+   --dir <path>        (add, list, upgrade, build) Project directory (defaults to cwd)
+   --platform <target> (build) Target platform to build (all, android, desktop, web)
+   -p <target>         Alias for --platform
   --json              (doctor) Print a machine-readable JSON report and exit
                       non-zero when required checks fail; (list) print the raw
                       generator manifest
@@ -169,6 +173,25 @@ async function main(): Promise<number> {
 				yes: flags.yes === true,
 			}
 			return runUpgrade(opts)
+		}
+		case 'build': {
+			if (positionals.length > 0) {
+				console.error(
+					'build takes no arguments. Usage: ionic-everywhere build [--platform <target>] [--dir <path>]',
+				)
+				return 1
+			}
+			const opts: BuildOptions = {
+				projectDir: typeof flags.dir === 'string' ? flags.dir : undefined,
+				pm: typeof flags.pm === 'string' ? flags.pm : undefined,
+				platform:
+					typeof flags.platform === 'string'
+						? flags.platform
+						: typeof flags.p === 'string'
+							? flags.p
+							: undefined,
+			}
+			return runBuild(opts)
 		}
 		case 'sign': {
 			if (positionals.length > 0) {
