@@ -1,0 +1,70 @@
+name: Bug report
+description: Something broken in the CLI, template, or generated app
+title: 'fix: '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please complete all sections — incomplete reports are closed after 14 days.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CLI scaffolding (`new`, `add`, `upgrade`)
+        - Generated app — Web
+        - Generated app — Android
+        - Generated app — Desktop (Electron)
+        - Docs
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: CLI version / commit
+      description: Output of `ionic-everywhere --version`, or the commit SHA if running from source.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: pm
+    attributes:
+      label: Package manager
+      description: bun (stable version?), npm, pnpm, or yarn.
+      placeholder: bun 1.4.1
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Minimal commands to reproduce, starting from an empty directory.
+      placeholder: |
+        1. bunx @involvex/ionic-everywhere new demo --yes --no-git
+        2. cd demo && bun run sync
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      description: What should have happened, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste the full terminal output (or test-scaffold.log for CLI failures).
+      render: shell
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues first
+          required: true
+        - label: I can reproduce on the latest `main`
+          required: false

@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose an enhancement to the CLI or template
+title: 'feat: '
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What hurts today? Who does it affect (new users, Android builders, desktop packagers…)?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should happen instead? Sketch the UX (flags, scripts, generated files).
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Likely scope
+      multiple: true
+      options:
+        - CLI (`new` / `add` / `upgrade` / `doctor`)
+        - Template default variant
+        - Template minimal variant
+        - reference-app verification
+        - Docs
+        - CI
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I can submit a PR for this (see CONTRIBUTING.md)

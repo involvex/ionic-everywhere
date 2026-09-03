@@ -42,9 +42,9 @@ type-only pass if needed.
 
 - Shell is PowerShell; use PowerShell-compatible syntax (`Remove-Item -Recurse`, etc.)
 - Package manager is **bun**. Do not use npm/pnpm/yarn commands locally.
-- JDK: system `JAVA_HOME` points at JDK 17, but **Android builds require JDK 21+**.
-  A portable JDK 21 lives at `D:\tmp\opencode\jdk21\jdk-21.0.12.1+1` — set
-  `$env:JAVA_HOME` to it when running gradle/cap android builds.
+- JDK: Android builds require JDK 21+. If the system `JAVA_HOME` points at an
+  older JDK, set `$env:JAVA_HOME` to a JDK 21+ install when running
+  gradle/cap android builds.
 - A file watcher/formatter rewrites written files (single→double quotes, line breaks).
   ALWAYS `Read` a file immediately before any `Edit`.
 

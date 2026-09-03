@@ -1,6 +1,6 @@
 # Phase 1 Findings — reference-app verification (2026-08-25)
 
-Verified stack: Ionic React **9.0.0** · React **19.2** · Vite **8.2** · TypeScript **7.0** · Capacitor **8.5.0** · `@capawesome/capacitor-electron` **0.1.0** (Electron **43.4**)
+Verified stack: Ionic React **9.0.2** · React **19.2** · Vite **8.2** · TypeScript **5.9** · Capacitor **8.5.1** · `@capawesome/capacitor-electron` **0.1.1** (Electron **43.4**)
 
 ## Verification results
 

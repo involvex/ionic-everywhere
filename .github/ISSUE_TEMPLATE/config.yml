@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://involvex.github.io/ionic-everywhere/
+    about: Start here — guides for new, add, upgrade, and deployment targets.
+  - name: Security report
+    url: https://github.com/involvex/ionic-everywhere/security/advisories/new
+    about: Do not file public issues for vulnerabilities. See SECURITY.md.
