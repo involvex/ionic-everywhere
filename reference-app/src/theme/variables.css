@@ -5,4 +5,15 @@
 	ion-tab-bar {
 		display: none;
 	}
+	/*
+	 * With Ionic Router, IonTabs renders inside a PageManager
+	 * `div.ion-page` (absolutely positioned, full-size). Docked, it would
+	 * cover the split-pane side menu, so promote it to the flex main.
+	 */
+	ion-split-pane.split-pane-visible > div.ion-page {
+		position: relative;
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+	}
 }

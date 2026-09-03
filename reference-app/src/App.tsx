@@ -26,7 +26,10 @@ const App: React.FC = () => {
 	return (
 		<IonApp>
 			<IonReactRouter>
-				<IonSplitPane contentId="main-content">
+				<IonSplitPane
+					contentId="main-content"
+					when="lg"
+				>
 					<AppMenu />
 					<IonTabs>
 						<IonRouterOutlet id="main-content">

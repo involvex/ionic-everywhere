@@ -4,6 +4,7 @@
 import {spawn} from 'node:child_process'
 import {existsSync} from 'node:fs'
 import {createRequire} from 'node:module'
+import {networkInterfaces} from 'node:os'
 import {join} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
@@ -40,14 +41,23 @@ try {
 		'@capacitor/cli/bin/capacitor',
 	)
 } catch {
-	const direct = join(root, 'node_modules', '@capacitor/cli', 'bin', 'capacitor')
+	const direct = join(
+		root,
+		'node_modules',
+		'@capacitor/cli',
+		'bin',
+		'capacitor',
+	)
 	if (existsSync(direct)) capEntry = direct
 }
 if (!capEntry) fail('Capacitor CLI is not installed. Run an install first.')
 
 // 1) Start the Vite dev server and wait for its "Local:" URL.
+// `--host` binds all interfaces (not just localhost): `cap run` points the
+// device at this machine's LAN IP, which is unreachable when Vite listens
+// on loopback only.
 console.log('[android:dev] starting Vite...')
-const vite = spawn(process.execPath, [viteEntry], {
+const vite = spawn(process.execPath, [viteEntry, '--host'], {
 	cwd: root,
 	stdio: ['ignore', 'pipe', 'pipe'],
 })
@@ -97,7 +107,26 @@ const devUrl = await new Promise((resolveUrl, reject) => {
 
 // 2) Run cap run android --live-reload pointed at the dev server.
 const port = new URL(devUrl).port || '5173'
-console.log(`[android:dev] deploying to device (${devUrl})`)
+// The device loads Vite via this machine's LAN IP. `cap run` defaults to
+// the first non-loopback interface, which is often a VPN/virtual adapter
+// (e.g. Tailscale) the phone cannot reach — so pick a reachable address:
+// an explicit ANDROID_DEV_HOST override, else the first RFC 1918 private
+// IPv4, else the first non-link-local IPv4. Without a pick, cap chooses.
+function pickLanIp() {
+	if (process.env.ANDROID_DEV_HOST) return process.env.ANDROID_DEV_HOST
+	const addrs = Object.values(networkInterfaces())
+		.flat()
+		.filter(a => a && (a.family === 'IPv4' || a.family === 4) && !a.internal)
+		.map(a => a.address)
+	const privateLan = addrs.find(a =>
+		/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a),
+	)
+	return privateLan ?? addrs.find(a => !a.startsWith('169.254.'))
+}
+const lanHost = pickLanIp()
+console.log(
+	`[android:dev] deploying to device (${devUrl}, live-reload host: ${lanHost ?? 'cap default'})`,
+)
 const cap = spawn(
 	process.execPath,
 	[
@@ -107,6 +136,7 @@ const cap = spawn(
 		'--live-reload',
 		'--forwardPorts',
 		`${port}:${port}`,
+		...(lanHost ? ['--host', lanHost] : []),
 		'--port',
 		port,
 	],
