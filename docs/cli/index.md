@@ -7,6 +7,7 @@
 | [`new`](/cli/new)         | Scaffold a new project                               |
 | [`add`](/cli/add)         | Add `android` or `desktop` to an existing project    |
 | [`upgrade`](/cli/upgrade) | Bring a project's tooling up to the current template |
+| [`sign`](/cli/sign)       | Build and sign an Android release APK                |
 | [`list`](/cli/list)       | Show generator info for the nearest project          |
 | [`doctor`](/cli/doctor)   | Check the environment                                |
 | `completions <shell>`     | Generate shell tab completions                       |

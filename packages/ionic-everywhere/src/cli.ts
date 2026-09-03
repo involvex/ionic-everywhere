@@ -9,6 +9,7 @@ import {defaultAction} from './dispatch'
 import {allRequiredOk, formatReport, runChecks} from './doctor'
 import {runList, type ListOptions} from './list'
 import {runNew, type NewOptions} from './new'
+import {runSign, type SignOptions} from './sign'
 import {runUpgrade, type UpgradeOptions} from './upgrade'
 import {parseFlags} from './util'
 
@@ -32,10 +33,11 @@ Usage:
   ionic-everywhere list                  Show generator info for the nearest
                                          ionic-everywhere project
    ionic-everywhere upgrade               Bring an existing project's tooling
-                                          up to the current template (scripts,
-                                          new template files, manifest)
+                                           up to the current template (scripts,
+                                           new template files, manifest)
+   ionic-everywhere sign                  Build and sign a release APK for Android
    ionic-everywhere completions <shell>   Generate shell tab completions
-                                          (powershell, bash, zsh, fish)
+                                           (powershell, bash, zsh, fish)
 
 Options:
   --name <name>       Display name of the app (no & < > " ' \\, line breaks or
@@ -54,9 +56,13 @@ Options:
   --no-electron       Skip adding the desktop (Electron) platform
   --no-install        Skip dependency install and platform generation
   --no-git            Skip git init
-  --tests             (new) Add a Vitest testing scaffold to the generated app
-                      (interactive default: yes; --yes default: no)
-  --keep-on-failure   (new) Keep a partially created project when a setup
+   --tests             (new) Add a Vitest testing scaffold to the generated app
+                       (interactive default: yes; --yes default: no)
+   --keystore <path>   (sign) Path to the release keystore file (.jks or .keystore)
+   --store-pass <pass> (sign) Password for the keystore
+   --key-alias <alias> (sign) Alias for the private key
+   --key-pass <pass>   (sign) Password for the private key (defaults to store-pass)
+   --keep-on-failure   (new) Keep a partially created project when a setup
                       step fails instead of offering to remove it
   --yes               Accept defaults, no prompts
   -h, --help          Show this help
@@ -163,6 +169,33 @@ async function main(): Promise<number> {
 				yes: flags.yes === true,
 			}
 			return runUpgrade(opts)
+		}
+		case 'sign': {
+			if (positionals.length > 0) {
+				console.error(
+					'sign takes no arguments. Usage: ionic-everywhere sign [options]',
+				)
+				return 1
+			}
+			const opts: SignOptions = {
+				projectDir: typeof flags.dir === 'string' ? flags.dir : undefined,
+				pm: typeof flags.pm === 'string' ? flags.pm : undefined,
+				keystore:
+					typeof flags.keystore === 'string' ? flags.keystore : undefined,
+				storePass:
+					typeof flags['store-pass'] === 'string'
+						? flags['store-pass']
+						: undefined,
+				keyAlias:
+					typeof flags['key-alias'] === 'string'
+						? flags['key-alias']
+						: undefined,
+				keyPass:
+					typeof flags['key-pass'] === 'string' ? flags['key-pass'] : undefined,
+				install: flags.install !== false,
+				yes: flags.yes === true,
+			}
+			return runSign(opts)
 		}
 		case 'completions': {
 			const shell = positionals[0] ?? 'powershell'

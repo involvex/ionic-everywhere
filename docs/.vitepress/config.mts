@@ -36,6 +36,7 @@ export default defineConfig({
 					{text: 'new', link: '/cli/new'},
 					{text: 'add', link: '/cli/add'},
 					{text: 'upgrade', link: '/cli/upgrade'},
+					{text: 'sign', link: '/cli/sign'},
 					{text: 'list', link: '/cli/list'},
 					{text: 'doctor', link: '/cli/doctor'},
 				],

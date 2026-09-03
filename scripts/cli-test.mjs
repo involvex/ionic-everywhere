@@ -1,7 +1,7 @@
 import {spawnSync} from 'node:child_process'
 import {existsSync, readFileSync} from 'node:fs'
 import {join} from 'node:path'
-import {cli, cliStdout, prepareTarget} from './e2e-utils.mjs'
+import {cli, cliResult, cliStdout, prepareTarget} from './e2e-utils.mjs'
 
 const target = prepareTarget('demo-app')
 
@@ -94,6 +94,70 @@ const webBuild = spawnSync(process.execPath, ['run', 'build'], {
 if (webBuild.status !== 0) {
 	console.error('cli:test FAILED - web build of the scaffolded app failed')
 	process.exit(webBuild.status ?? 1)
+}
+
+// Exercise the `sign` command end-to-end against the fresh project. A real
+// release build needs an Android SDK + keystore, so we assert the validation
+// paths: missing flags with --yes fail loudly, an unknown --pm fails, and a
+// nonexistent keystore path fails. These guard the flag wiring in cli.ts.
+const signMissing = cliResult([
+	'sign',
+	'--dir',
+	target,
+	'--yes',
+	'--no-install',
+])
+if (signMissing.status === 0) {
+	console.error(
+		'cli:test FAILED - "sign --yes" without keystore flags succeeded unexpectedly',
+	)
+	process.exit(1)
+}
+if (
+	!`${signMissing.stdout}${signMissing.stderr}`.includes(
+		'Missing required signing options',
+	)
+) {
+	console.error(
+		`cli:test FAILED - "sign --yes" error did not list missing options:\n${signMissing.stdout}\n${signMissing.stderr}`,
+	)
+	process.exit(1)
+}
+
+const signBadPm = cliResult(['sign', '--dir', target, '--yes', '--pm', 'nope'])
+if (
+	signBadPm.status === 0 ||
+	!`${signBadPm.stdout}${signBadPm.stderr}`.includes('Unsupported --pm')
+) {
+	console.error(
+		`cli:test FAILED - "sign --pm nope" did not reject the PM:\n${signBadPm.stdout}\n${signBadPm.stderr}`,
+	)
+	process.exit(1)
+}
+
+const signBadKeystore = cliResult([
+	'sign',
+	'--dir',
+	target,
+	'--yes',
+	'--no-install',
+	'--keystore',
+	'does-not-exist.jks',
+	'--store-pass',
+	'secret',
+	'--key-alias',
+	'release',
+])
+if (
+	signBadKeystore.status === 0 ||
+	!`${signBadKeystore.stdout}${signBadKeystore.stderr}`.includes(
+		'Keystore file not found',
+	)
+) {
+	console.error(
+		`cli:test FAILED - nonexistent keystore was not rejected:\n${signBadKeystore.stdout}\n${signBadKeystore.stderr}`,
+	)
+	process.exit(1)
 }
 
 console.log(
