@@ -6,7 +6,7 @@ dist/
 # caches
 .eslintcache
 .vite/
-.vitepress/
+/.vitepress/
 coverage/
 docs/.vitepress/dist/
 docs/.vitepress/cache/

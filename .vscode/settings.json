@@ -46,6 +46,6 @@
     "debug.terminal.clearBeforeReusing": true,
     "debug.javascript.autoAttachFilter": "smart",
     "debug.javascript.codelens.npmScripts": "top",
-    "typescript.tsdk": "node_modules/typescript/lib",
-    "typescript.enablePromptUseWorkspaceTsdk": true
+    "js/ts.tsdk.path": "node_modules/typescript/lib",
+    "js/ts.tsdk.promptToUseWorkspaceVersion": true
 }

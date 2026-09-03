@@ -17,17 +17,21 @@ Capacitor 8 requires JDK 21 or newer for Android builds. Run `ionic-everywhere d
 ## Scaffold
 
 ```bash
-bunx create-ionic-everywhere my-app
+bunx @involvex/ionic-everywhere new my-app
 cd my-app
 ```
 
 Answer the prompts (app name, application id, package manager, platforms), or accept all defaults non-interactively:
 
 ```bash
-bunx create-ionic-everywhere my-app --yes
+bunx @involvex/ionic-everywhere new my-app --yes
 ```
 
 Useful flags: see [`ionic-everywhere new`](/cli/new).
+
+::: tip Repeat users
+Prefer a global install? `bun add -g @involvex/ionic-everywhere`, then run `ionic-everywhere new my-app` — or the shorter `create-ionic-everywhere my-app` / `ine my-app`, which map to `new` automatically.
+:::
 
 ## Run on the web
 

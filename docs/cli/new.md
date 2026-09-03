@@ -3,12 +3,12 @@
 Scaffold a new project.
 
 ```bash
-bunx create-ionic-everywhere my-app
+bunx @involvex/ionic-everywhere new my-app
 ionic-everywhere new my-app --yes
 ionic-everywhere new my-app --no-electron   # web + Android only
 ```
 
-`create-ionic-everywhere [dir]` is an alias for `new`.
+With a global install (`bun add -g @involvex/ionic-everywhere`), `create-ionic-everywhere [dir]` is an alias for `new`.
 
 ## Options
 

@@ -24,7 +24,7 @@ features:
 ## Quick start
 
 ```bash
-bunx create-ionic-everywhere my-app
+bunx @involvex/ionic-everywhere new my-app
 cd my-app
 
 bun run dev     # web dev server (hot reload)

@@ -1,6 +1,6 @@
 # CLI reference
 
-`ionic-everywhere` (binary also available as `create-ionic-everywhere` and `ine`) manages the full lifecycle of a generated project.
+`ionic-everywhere` (global install also provides `create-ionic-everywhere` and `ine` binaries) manages the full lifecycle of a generated project.
 
 | Command                   | Purpose                                              |
 | ------------------------- | ---------------------------------------------------- |

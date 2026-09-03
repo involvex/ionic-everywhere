@@ -63,7 +63,7 @@ Options:
   -v, --version       Show version
 
 Examples:
-  bunx create-ionic-everywhere my-app
+  bunx @involvex/ionic-everywhere new my-app
   ionic-everywhere new my-app --yes
   ionic-everywhere new my-app --no-electron   # web + Android only
   cd my-app && ionic-everywhere add desktop   # add Electron later
