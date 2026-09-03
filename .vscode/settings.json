@@ -11,5 +11,41 @@
         "**/.kilocode/worktrees/**": true,
         "release/**": true,
         ".test/**": true,
-    }
+        "**/node_modules/**": true,
+        "**/app.asar/**": true,
+        "**/*.asar": true,
+        "**/dist/**": true,
+        "**/android/**/build/**": true,
+        "**/.gradle/**": true,
+        "**/*.log": true
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/flutter/ephemeral": true,
+        "**/Flutter/ephemeral": true,
+        "**/.symlinks": true,
+        "**/.plugin_symlinks": true,
+        "**/app.asar": true
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/dist": true,
+        "**/android": true,
+        "**/.test": true,
+        "**/bun.lock": true
+    },
+    "debug.openDebug": "openOnDebugBreak",
+    "debug.focusWindowOnBreak": true,
+    "debug.inlineValues": "auto",
+    "debug.console.historySuggestions": true,
+    "debug.showBreakpointsInOverviewRuler": true,
+    "debug.terminal.clearBeforeReusing": true,
+    "debug.javascript.autoAttachFilter": "smart",
+    "debug.javascript.codelens.npmScripts": "top",
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true
 }
