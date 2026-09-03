@@ -5,6 +5,8 @@
 import {spawn} from 'node:child_process'
 import {join} from 'node:path'
 import {fileURLToPath} from 'node:url'
+import {process, console} from 'node:process'
+import {URL} from 'node:url'
 
 const androidDir = fileURLToPath(new URL('../android', import.meta.url))
 const [, , task, ...extra] = process.argv

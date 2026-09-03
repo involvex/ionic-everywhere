@@ -22,6 +22,7 @@
 		"ci:lint-test": "bun run verify && npx tsc -p packages/ionic-everywhere/tsconfig.json --noEmit && bun run build",
 		"clean": "bun scripts/clean.mjs",
 		"cli:dev": "bun run --filter @involvex/ionic-everywhere dev",
+		"cli:publish": "bun run build && bun run --filter @involvex/ionic-everywhere publish",
 		"cli:test": "bun run build && bun scripts/cli-test.mjs",
 		"docs:build": "vitepress build docs",
 		"docs:dev": "vitepress dev docs",

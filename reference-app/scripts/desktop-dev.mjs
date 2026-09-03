@@ -8,6 +8,9 @@ import {existsSync} from 'node:fs'
 import {createRequire} from 'node:module'
 import {join} from 'node:path'
 import {fileURLToPath} from 'node:url'
+import {process, console} from 'node:process'
+import {URL} from 'node:url'
+import {setTimeout, clearTimeout} from 'node:timers/promises'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const electronDir = join(root, 'electron')

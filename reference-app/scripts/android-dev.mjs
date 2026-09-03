@@ -7,6 +7,9 @@ import {createRequire} from 'node:module'
 import {networkInterfaces} from 'node:os'
 import {join} from 'node:path'
 import {fileURLToPath} from 'node:url'
+import {process, console} from 'node:process'
+import {URL} from 'node:url'
+import {setTimeout, clearTimeout} from 'node:timers/promises'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 
