@@ -1,0 +1,71 @@
+name: Docs
+
+# Build the VitePress site on every docs change; deploy to GitHub Pages
+# on main pushes. PRs only build (validation, no deploy).
+# One-time setup: repository Settings -> Pages -> Source: "GitHub Actions".
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - .github/workflows/docs.yml
+  pull_request:
+    paths:
+      - docs/**
+      - .github/workflows/docs.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Bun
+        run: |
+          curl -fsSL -o /tmp/bun.zip \
+            https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-linux-x64.zip
+          python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
+          mkdir -p ~/.bun/bin
+          mv /tmp/bun-extract/bun-linux-x64/bun ~/.bun/bin/bun
+          cp /tmp/bun-extract/bun-linux-x64/bunx ~/.bun/bin/bunx 2>/dev/null || true
+          rm -rf /tmp/bun.zip /tmp/bun-extract
+          chmod +x ~/.bun/bin/bun ~/.bun/bin/bunx 2>/dev/null || true
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          "$HOME/.bun/bin/bun" --version
+        shell: bash
+      - name: Cache bun install cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - run: bun install --frozen-lockfile
+      - run: bun run docs:build
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/.vitepress/dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

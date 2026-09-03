@@ -6,7 +6,10 @@ dist/
 # caches
 .eslintcache
 .vite/
+.vitepress/
 coverage/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
 
 # local CLI test output
 .test/

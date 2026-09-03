@@ -12,6 +12,7 @@ node_modules
 dist
 build
 coverage
+.vitepress
 .next
 .nuxt
 .cache

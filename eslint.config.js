@@ -8,6 +8,7 @@ export default tseslint.config(
 			'**/dist/**',
 			'**/node_modules/**',
 			'**/templates/**',
+			'**/.vitepress/**',
 			'reference-app/**',
 			'eslint.config.js',
 			'.test/**',
