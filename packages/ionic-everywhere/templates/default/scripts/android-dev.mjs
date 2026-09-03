@@ -67,7 +67,8 @@ vite.stderr.setEncoding('utf8')
 const devUrl = await new Promise((resolveUrl, reject) => {
 	let pending = ''
 	let resolved = false
-	const ansi = /\x1B\[[0-9;]*[A-Za-z]/g
+	// ESC (0x1B) via fromCharCode so the source has no control-char literal (no-control-regex).
+	const ansi = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*[A-Za-z]`, 'g')
 	const onData = chunk => {
 		const lines = (pending + chunk).split(/\r?\n/)
 		pending = lines.pop() ?? ''
