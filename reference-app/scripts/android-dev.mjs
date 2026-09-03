@@ -31,6 +31,26 @@ try {
 }
 if (!viteEntry) fail('Vite is not installed. Run an install first.')
 
+// Resolve the real Capacitor CLI entry point (not the `.bin` shim: on
+// Windows that is a native launcher binary, which Node cannot execute as
+// a script). Same pattern as the Vite resolution above.
+let capEntry
+try {
+	capEntry = createRequire(join(root, 'package.json')).resolve(
+		'@capacitor/cli/bin/capacitor',
+	)
+} catch {
+	const direct = join(
+		root,
+		'node_modules',
+		'@capacitor/cli',
+		'bin',
+		'capacitor',
+	)
+	if (existsSync(direct)) capEntry = direct
+}
+if (!capEntry) fail('Capacitor CLI is not installed. Run an install first.')
+
 // 1) Start the Vite dev server and wait for its "Local:" URL.
 console.log('[android:dev] starting Vite...')
 const vite = spawn(process.execPath, [viteEntry], {
@@ -87,7 +107,7 @@ console.log(`[android:dev] deploying to device (${devUrl})`)
 const cap = spawn(
 	process.execPath,
 	[
-		join(root, 'node_modules', '.bin', 'cap'),
+		capEntry,
 		'run',
 		'android',
 		'--live-reload',

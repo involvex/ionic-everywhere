@@ -1,0 +1,15 @@
+{
+    "files.watcherExclude": {
+        ".git/objects/**": true,
+        ".git/subtree-cache/**": true,
+        ".hg/store/**": true,
+        "*/.git/objects/**": true,
+        "*/.git/subtree-cache/**": true,
+        "*/.hg/store/**": true,
+        "**/.dart_tool": true,
+        "**/.kilo/worktrees/**": true,
+        "**/.kilocode/worktrees/**": true,
+        "release/**": true,
+        ".test/**": true,
+    }
+}

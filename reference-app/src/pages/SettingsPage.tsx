@@ -37,7 +37,9 @@ const SettingsPage: React.FC = () => {
 					<IonItem>
 						<IonToggle
 							checked={notifications}
-							onIonChange={e => setNotifications(e.detail.checked)}
+							onIonChange={(e: CustomEvent<{checked: boolean}>) =>
+								setNotifications(e.detail.checked)
+							}
 						>
 							Notifications
 						</IonToggle>
@@ -45,7 +47,9 @@ const SettingsPage: React.FC = () => {
 					<IonItem>
 						<IonToggle
 							checked={haptics}
-							onIonChange={e => setHaptics(e.detail.checked)}
+							onIonChange={(e: CustomEvent<{checked: boolean}>) =>
+								setHaptics(e.detail.checked)
+							}
 						>
 							Haptics
 						</IonToggle>
@@ -53,7 +57,9 @@ const SettingsPage: React.FC = () => {
 					<IonItem lines="none">
 						<IonToggle
 							checked={darkMode}
-							onIonChange={e => setDarkMode(e.detail.checked)}
+							onIonChange={(e: CustomEvent<{checked: boolean}>) =>
+								setDarkMode(e.detail.checked)
+							}
 						>
 							Dark Mode
 						</IonToggle>

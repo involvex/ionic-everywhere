@@ -49,7 +49,9 @@ const ListPage: React.FC = () => {
 							aria-label="New item"
 							placeholder="Add an item…"
 							value={draft}
-							onIonInput={e => setDraft(e.detail.value ?? '')}
+							onIonInput={(e: CustomEvent<{value?: string | null}>) =>
+								setDraft(e.detail.value ?? '')
+							}
 							onKeyDown={e => {
 								if (e.key === 'Enter') add()
 							}}
