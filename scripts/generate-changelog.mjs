@@ -14,11 +14,11 @@ const versionHeader = `## [${version}]`
 const dateLine = `## [${version}] - ${today}`
 
 if (existsSync(changelogPath)) {
-  const current = readFileSync(changelogPath, 'utf8')
-  if (current.includes(versionHeader)) {
-    console.log(`Changelog already contains ${versionHeader}; nothing to do.`)
-    process.exit(0)
-  }
+	const current = readFileSync(changelogPath, 'utf8')
+	if (current.includes(versionHeader)) {
+		console.log(`Changelog already contains ${versionHeader}; nothing to do.`)
+		process.exit(0)
+	}
 }
 
 const tag = execSync('git tag --list "v*" --sort=-v:refname', {
