@@ -169,13 +169,14 @@ export function inferProjectOptions(root: string): ManifestOptions {
 function effectiveOptions(
 	root: string,
 	manifestOptions?: Record<string, unknown>,
+	explicitPm?: string,
 ): ManifestOptions {
 	const fromDisk = inferProjectOptions(root)
 	const pickString = (key: string, fallback: string): string => {
 		const v = manifestOptions?.[key]
 		return typeof v === 'string' && v.length > 0 ? v : fallback
 	}
-	const pm = pickString('pm', fromDisk.pm)
+	const pm = explicitPm ?? pickString('pm', fromDisk.pm)
 	return {
 		appName: pickString('appName', fromDisk.appName),
 		appId: pickString('appId', fromDisk.appId),
@@ -257,6 +258,7 @@ export function planUpgrade(
 	cliVersion: string = generatorVersion(),
 	force = false,
 	checkDeps = false,
+	explicitPm?: string,
 ): UpgradePlan {
 	const read = readManifest(projectRoot)
 	if (read.state === 'malformed')
@@ -267,7 +269,7 @@ export function planUpgrade(
 	const pkg = readPkg(projectRoot)
 	const manifest =
 		read.state === 'ok' ? (read.manifest as GeneratorManifest) : undefined
-	const options = effectiveOptions(projectRoot, manifest?.options)
+	const options = effectiveOptions(projectRoot, manifest?.options, explicitPm)
 
 	const empty: UpgradePlan = {
 		upToDate: true,
@@ -681,7 +683,7 @@ export async function runUpgrade(opts: UpgradeOptions): Promise<number> {
 	const cliVersion = generatorVersion()
 	let plan: UpgradePlan
 	try {
-		plan = planUpgrade(root, cliVersion, opts.force === true, depsMode)
+		plan = planUpgrade(root, cliVersion, opts.force === true, depsMode, opts.pm)
 	} catch (err) {
 		p.log.error(err instanceof Error ? err.message : String(err))
 		return 1

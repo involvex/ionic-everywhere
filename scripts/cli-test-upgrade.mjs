@@ -96,3 +96,58 @@ if (
 console.log(
 	'cli-test-upgrade OK - aged project upgraded: scripts restored, template file re-copied, manifest bumped',
 )
+
+// ===== Phase 2: --check-deps smoke test =====
+// --check-deps must be safe to run non-interactively and must not mutate anything.
+const checkDeps = cliResult(['upgrade', '--dir', target, '--check-deps'])
+if (checkDeps.status !== 0) {
+	console.error(
+		`cli-test-upgrade FAILED - --check-deps exited non-zero:\n${checkDeps.stdout}\n${checkDeps.stderr}`,
+	)
+	process.exit(1)
+}
+const checkDepsOutput = `${checkDeps.stdout}${checkDeps.stderr}`
+if (
+	!checkDepsOutput.includes('Dependency updates:') &&
+	!checkDepsOutput.includes('dependencies also up to date')
+) {
+	console.error(
+		`cli-test-upgrade FAILED - --check-deps did not report dependency status:\n${checkDepsOutput}`,
+	)
+	process.exit(1)
+}
+if (readManifestJson().generatorVersion !== cliVersion) {
+	console.error('cli-test-upgrade FAILED - --check-deps mutated the manifest')
+	process.exit(1)
+}
+
+// ===== Phase 2: aged-deps --deps --yes assertion =====
+// Downgrade a blessed dep, then apply safe bumps with --deps --yes.
+// Post-verify may fail in CI (no node_modules / cap sync needs web assets),
+// but the dep bump itself is applied before verify runs.
+{
+	const pkgPath = join(target, 'package.json')
+	const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
+	pkg.devDependencies['typescript'] = '^5.8.0'
+	writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
+}
+const depsResult = cliResult(['upgrade', '--dir', target, '--deps', '--yes'])
+if (depsResult.status !== 0 && depsResult.status !== undefined) {
+	console.error(
+		`cli-test-upgrade WARN - --deps exited non-zero (likely post-verify failed):\n${depsResult.stdout}\n${depsResult.stderr}`,
+	)
+}
+
+const pkgAfterDeps = JSON.parse(
+	readFileSync(join(target, 'package.json'), 'utf8'),
+)
+if (pkgAfterDeps.devDependencies['typescript'] !== '^5.9.3') {
+	console.error(
+		`cli-test-upgrade FAILED - typescript not bumped by --deps: ${pkgAfterDeps.devDependencies['typescript']}`,
+	)
+	process.exit(1)
+}
+
+console.log(
+	'cli-test-upgrade OK - --check-deps reported drift safely, --deps --yes applied safe bumps',
+)

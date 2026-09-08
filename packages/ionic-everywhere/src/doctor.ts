@@ -1,6 +1,7 @@
 import {spawnSync} from 'node:child_process'
-import {existsSync} from 'node:fs'
+import {existsSync, readFileSync} from 'node:fs'
 import {join} from 'node:path'
+import {platformDirsPresent} from './list'
 import {commandExists} from './util'
 
 export interface CheckResult {
@@ -17,7 +18,10 @@ export interface CheckInputs {
 	probe?: (cmd: string) => boolean
 	javaProbe?: (javaExe: string) => number | null
 	bunVersionProbe?: () => string | null
+	projectRoot?: string
 }
+
+const PROJECT_MARKERS = ['capacitor.config.ts', 'package.json']
 
 // Environment probes must never hang the CLI: a stalled java.exe or a
 // path lookup wedged on AV/indexer load should read as "not available".
@@ -194,6 +198,109 @@ export function runChecks(inputs: CheckInputs = {}): CheckResult[] {
 				? 'SDK directory exists but is incomplete - install platform-tools via Android Studio or sdkmanager'
 				: 'Install Android Studio or command-line tools, then set ANDROID_HOME',
 	})
+
+	if (inputs.projectRoot) {
+		const projectResults = runProjectAwareChecks(inputs.projectRoot)
+		results.push(...projectResults)
+	}
+
+	return results
+}
+
+function isProjectRoot(dir: string): boolean {
+	return PROJECT_MARKERS.every(m => existsSync(join(dir, m)))
+}
+
+function readPkg(root: string): Record<string, unknown> {
+	return JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+}
+
+export function runProjectAwareChecks(root: string): CheckResult[] {
+	const results: CheckResult[] = []
+	if (!isProjectRoot(root)) return results
+
+	const pkg = readPkg(root)
+	const deps = {
+		...((pkg.dependencies as Record<string, string> | undefined) ?? {}),
+		...((pkg.devDependencies as Record<string, string> | undefined) ?? {}),
+	}
+	const keyDeps = [
+		'@capacitor/core',
+		'@capacitor/cli',
+		'@capacitor/android',
+		'@capawesome/capacitor-electron',
+		'@ionic/react',
+		'@ionic/react-router',
+		'react-router',
+		'react-router-dom',
+		'vite-plugin-pwa',
+		'workbox-window',
+		'typescript',
+	]
+	const versions: string[] = []
+	for (const dep of keyDeps) {
+		const ver = deps[dep]
+		if (ver) versions.push(`${dep}@${ver}`)
+	}
+	if (versions.length > 0) {
+		results.push({
+			name: 'Project key dependencies',
+			ok: true,
+			required: false,
+			detail: versions.join(', '),
+		})
+	}
+
+	const dirs = platformDirsPresent(root)
+	const allPlatforms = ['android', 'electron']
+	const present = allPlatforms.filter(d => dirs.includes(d))
+	const missing = allPlatforms.filter(d => !dirs.includes(d))
+	if (present.length > 0 || missing.length > 0) {
+		results.push({
+			name: 'Platform directories',
+			ok: missing.length === 0,
+			required: false,
+			detail:
+				missing.length === 0
+					? present.join(', ')
+					: `missing: ${missing.join(', ')} (present: ${present.join(', ')})`,
+			hint:
+				missing.length > 0
+					? 'Run ionic-everywhere add <android|desktop>'
+					: undefined,
+		})
+	}
+
+	const scripts = (pkg.scripts as Record<string, string> | undefined) ?? {}
+	const expected =
+		present.length === 2
+			? [
+					'sync',
+					'build:all',
+					'build:android',
+					'build:desktop',
+					'preandroid',
+					'predesktop',
+					'android',
+					'desktop',
+					'desktop:dev',
+					'open:android',
+				]
+			: present.includes('android')
+				? ['sync', 'build:android', 'preandroid', 'android', 'open:android']
+				: present.includes('electron')
+					? ['sync', 'build:desktop', 'predesktop', 'desktop', 'desktop:dev']
+					: []
+	const missingScripts = expected.filter(s => !scripts[s])
+	if (missingScripts.length > 0 && expected.length > 0) {
+		results.push({
+			name: 'Script drift (canonical registry)',
+			ok: false,
+			required: false,
+			detail: `missing scripts: ${missingScripts.join(', ')}`,
+			hint: 'Run ionic-everywhere upgrade to restore canonical scripts',
+		})
+	}
 
 	return results
 }

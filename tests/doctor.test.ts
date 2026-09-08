@@ -9,6 +9,7 @@ import {
 	javaVersion,
 	nodeMajor,
 	runChecks,
+	runProjectAwareChecks,
 } from '../packages/ionic-everywhere/src/doctor'
 
 describe('nodeMajor', () => {
@@ -223,5 +224,98 @@ describe('isPrereleaseVersion (FEAT-033)', () => {
 		expect(isPrereleaseVersion('1.0.0-rc.2')).toBe(true)
 		expect(isPrereleaseVersion('1.4.1')).toBe(false)
 		expect(isPrereleaseVersion('v1.4.1')).toBe(false)
+	})
+})
+
+describe('runProjectAwareChecks (Phase 4)', () => {
+	const tempDirs: string[] = []
+	function makeTemp(): string {
+		const dir = mkdtempSync(join(tmpdir(), 'ie-doctor-project-'))
+		tempDirs.push(dir)
+		return dir
+	}
+	afterAll(() => {
+		for (const dir of tempDirs) rmSync(dir, {recursive: true, force: true})
+	})
+
+	it('returns empty array when not a project root', () => {
+		const dir = makeTemp()
+		writeFileSync(join(dir, 'random.txt'), 'hi')
+		expect(runProjectAwareChecks(dir)).toHaveLength(0)
+	})
+
+	it('reports key dependency versions', () => {
+		const dir = makeTemp()
+		writeFileSync(
+			join(dir, 'capacitor.config.ts'),
+			"export default {appId: 'io.test.app'}\n",
+		)
+		writeFileSync(
+			join(dir, 'package.json'),
+			JSON.stringify({
+				name: 'test-app',
+				dependencies: {
+					'@capacitor/core': '^8.5.0',
+					'@ionic/react': '^9.0.1',
+				},
+			}),
+		)
+		const checks = runProjectAwareChecks(dir)
+		const depCheck = checks.find(c => c.name === 'Project key dependencies')
+		expect(depCheck?.ok).toBe(true)
+		expect(depCheck?.detail).toContain('@capacitor/core@^8.5.0')
+		expect(depCheck?.detail).toContain('@ionic/react@^9.0.1')
+	})
+
+	it('detects missing platform directories', () => {
+		const dir = makeTemp()
+		writeFileSync(
+			join(dir, 'capacitor.config.ts'),
+			"export default {appId: 'io.test.app'}\n",
+		)
+		writeFileSync(join(dir, 'package.json'), JSON.stringify({name: 'test-app'}))
+		mkdirSync(join(dir, 'android'), {recursive: true}) // only one platform
+		const checks = runProjectAwareChecks(dir)
+		const platformCheck = checks.find(c => c.name === 'Platform directories')
+		expect(platformCheck?.ok).toBe(false)
+		expect(platformCheck?.detail).toContain('missing')
+	})
+
+	it('passes platform check when directories exist', () => {
+		const dir = makeTemp()
+		writeFileSync(
+			join(dir, 'capacitor.config.ts'),
+			"export default {appId: 'io.test.app'}\n",
+		)
+		writeFileSync(join(dir, 'package.json'), JSON.stringify({name: 'test-app'}))
+		mkdirSync(join(dir, 'android'), {recursive: true})
+		mkdirSync(join(dir, 'electron'), {recursive: true})
+		const checks = runProjectAwareChecks(dir)
+		const platformCheck = checks.find(c => c.name === 'Platform directories')
+		expect(platformCheck?.ok).toBe(true)
+		expect(platformCheck?.detail).toContain('android')
+		expect(platformCheck?.detail).toContain('electron')
+	})
+
+	it('detects script drift against canonical registry', () => {
+		const dir = makeTemp()
+		writeFileSync(
+			join(dir, 'capacitor.config.ts'),
+			"export default {appId: 'io.test.app'}\n",
+		)
+		writeFileSync(
+			join(dir, 'package.json'),
+			JSON.stringify({
+				name: 'test-app',
+				scripts: {dev: 'vite', build: 'tsc && vite build'},
+			}),
+		)
+		mkdirSync(join(dir, 'android'), {recursive: true})
+		const checks = runProjectAwareChecks(dir)
+		const driftCheck = checks.find(
+			c => c.name === 'Script drift (canonical registry)',
+		)
+		expect(driftCheck?.ok).toBe(false)
+		expect(driftCheck?.detail).toContain('missing scripts')
 	})
 })

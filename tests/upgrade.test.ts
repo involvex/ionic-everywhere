@@ -225,6 +225,12 @@ describe('planUpgrade / applyUpgrade (FEAT-029)', () => {
 		applyUpgrade(target, plan)
 		expect(readPkgJson(target).workspaces).toContain('electron')
 	})
+
+	it('explicit pm overrides manifest and disk inference', () => {
+		const target = scaffoldFixture() // defaults to bun
+		const plan = planUpgrade(target, undefined, false, false, 'pnpm')
+		expect(plan.options.pm).toBe('pnpm')
+	})
 })
 
 describe('applyDepChanges (Phase 2)', () => {

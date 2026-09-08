@@ -111,7 +111,7 @@ async function main(): Promise<number> {
 
 	switch (action) {
 		case 'doctor': {
-			const checks = runChecks()
+			const checks = runChecks({projectRoot: process.cwd()})
 			if (flags.json === true)
 				console.log(
 					JSON.stringify({ok: allRequiredOk(checks), checks}, null, 2),
