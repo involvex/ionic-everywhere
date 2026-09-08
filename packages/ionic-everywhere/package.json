@@ -1,6 +1,6 @@
 {
 	"name": "@involvex/ionic-everywhere",
-	"version": "0.1.3",
+	"version": "0.1.4",
 	"description": "Scaffold one responsive Ionic React codebase that builds Web, Android and Desktop apps.",
 	"keywords": [
 		"ionic",

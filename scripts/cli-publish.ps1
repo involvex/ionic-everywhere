@@ -23,6 +23,24 @@ function Test-Command([string]$cmd) {
     try { $null = Get-Command $cmd -ErrorAction Stop; $true } catch { $false }
 }
 
+function Invoke-Command([string]$cmd) {
+    Write-Host "+ $cmd"
+    if ($DryRun -and $cmd -match '^(git push|bun publish|npm publish)') {
+        Write-Host "[dry-run] Skipping: $cmd"
+        return 0
+    }
+    $psi = [System.Diagnostics.ProcessStartContext]::new('cmd', "/c `"$cmd`"")
+    # Fallback to direct call for simple commands
+    $psi.FileName = 'cmd'
+    $psi.Arguments = "/c `"$cmd`""
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.UseShellExecute = $false
+    $p = [System.Diagnostics.Process]::Start($psi)
+    $p.WaitForExit()
+    return $p.ExitCode
+}
+
 Write-Step 'Checking preconditions'
 
 if (-not (Test-Command 'git')) { throw 'git is required and not on PATH' }
@@ -39,6 +57,7 @@ try {
     if (-not $SkipTests) {
         Write-Step 'Running verify (format + lint + tests)'
         bun run verify
+        if ($LASTEXITCODE -ne 0) { throw 'verify failed' }
     }
 
     $packageJson = Get-Content $packageJsonPath -Raw | ConvertFrom-Json
@@ -77,6 +96,7 @@ try {
         $packageJson.version = $newVersion
         $packageJson | ConvertTo-Json -Depth 10 | Set-Content $packageJsonPath -Encoding utf8
         bun run build
+        if ($LASTEXITCODE -ne 0) { throw 'build failed after version bump' }
     } else {
         $newVersion = $currentVersion
         Write-Host "Local version $currentVersion is newer than registry $registryVersion. Keeping version."
@@ -85,19 +105,28 @@ try {
     Write-Step "Generating changelog for $newVersion"
     if (Test-Path $changelogScript) {
         bun $changelogScript
+        if ($LASTEXITCODE -ne 0) { throw 'changelog generation failed' }
     } else {
         Write-Warning "Changelog script not found at $changelogScript; skipping."
     }
 
     Write-Step 'Building package'
     bun run build
+    if ($LASTEXITCODE -ne 0) { throw 'build failed' }
 
     Write-Step 'Validating publish contents (dry-run)'
     Push-Location $packageDir
     try {
-        bun publish --dry-run --access public
+        npm pack --dry-run
+        if ($LASTEXITCODE -ne 0) { throw 'npm pack --dry-run failed' }
     } finally {
         Pop-Location
+    }
+
+    if ($DryRun) {
+        Write-Host "`nDry-run mode: stopping before publish. Would publish v$newVersion."
+        Pop-Location
+        exit 0
     }
 
     $commitMessage = "chore(release): v$newVersion"
@@ -114,27 +143,26 @@ try {
         git add (Join-Path $packageDir 'LICENSE')
     }
     git commit -m $commitMessage
+    if ($LASTEXITCODE -ne 0) { throw 'git commit failed' }
 
     Write-Step "Tagging v$newVersion"
     git tag "v$newVersion"
-
-    if ($DryRun) {
-        Write-Host "`nDry-run mode: stopping before publish. Tag v$newVersion created locally."
-        Pop-Location
-        exit 0
-    }
+    if ($LASTEXITCODE -ne 0) { throw 'git tag failed' }
 
     Write-Step 'Publishing to npm'
     Push-Location $packageDir
     try {
         bun publish --access public
+        if ($LASTEXITCODE -ne 0) { throw 'bun publish failed' }
     } finally {
         Pop-Location
     }
 
     Write-Step 'Pushing commit and tag'
     git push
+    if ($LASTEXITCODE -ne 0) { throw 'git push failed' }
     git push --tags
+    if ($LASTEXITCODE -ne 0) { throw 'git push --tags failed' }
 
     Write-Host "`nPublished @involvex/ionic-everywhere@$newVersion successfully." -ForegroundColor Green
 } finally {
