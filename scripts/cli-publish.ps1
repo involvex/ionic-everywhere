@@ -66,13 +66,27 @@ try {
 
     Write-Step 'Checking registry for existing version'
     $registryVersion = ''
-    try {
-        $registryVersion = npm view @involvex/ionic-everywhere version 2>$null
-        $registryVersion = $registryVersion.Trim()
-    } catch {
-        $registryVersion = ''
+    $registryAttempts = 0
+    $registryMaxAttempts = 3
+    while ($registryAttempts -lt $registryMaxAttempts -and -not $registryVersion) {
+        try {
+            $registryAttempts++
+            Write-Host "  npm view attempt $registryAttempts/$registryMaxAttempts"
+            $registryVersion = npm view @involvex/ionic-everywhere version 2>$null
+            $registryVersion = $registryVersion.Trim()
+        } catch {
+            $registryVersion = ''
+            if ($registryAttempts -lt $registryMaxAttempts) {
+                Write-Warning "  npm view failed (attempt $registryAttempts), retrying in 2s..."
+                Start-Sleep -Seconds 2
+            }
+        }
     }
     Write-Host "Registry version: $(if ($registryVersion) { $registryVersion } else { '<not published yet>' })"
+
+    if (-not $registryVersion -and $registryAttempts -ge $registryMaxAttempts) {
+        throw "Could not verify registry version after $registryMaxAttempts attempts. Check network/npm registry access and try again."
+    }
 
     if ($registryVersion -and [version]$currentVersion -le [version]$registryVersion) {
         if ($Bump -eq 'manual') {
