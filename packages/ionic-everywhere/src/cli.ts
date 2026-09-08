@@ -36,11 +36,13 @@ Usage:
     ionic-everywhere upgrade               Bring an existing project's tooling
                                             up to the current template (scripts,
                                             new template files, manifest)
-    ionic-everywhere upgrade --check-deps  Report dependency drift vs the blessed
-                                            registry (safe, non-interactive)
-    ionic-everywhere upgrade --deps        Apply safe patch/minor dependency bumps
-                                            (Phase 2; currently report-only)
-    ionic-everywhere upgrade --allow-dirty Apply even with uncommitted git changes
+     ionic-everywhere upgrade --pm <pm>       Override the package manager for the
+                                             upgrade (defaults to manifest or disk)
+     ionic-everywhere upgrade --check-deps  Report dependency drift vs the blessed
+                                             registry (safe, non-interactive)
+     ionic-everywhere upgrade --deps        Apply safe patch/minor dependency bumps
+                                             (Phase 2; currently report-only)
+     ionic-everywhere upgrade --allow-dirty Apply even with uncommitted git changes
    ionic-everywhere build                 Run project build scripts (defaults to build:all)
    ionic-everywhere sign                  Build and sign a release APK for Android
    ionic-everywhere completions <shell>   Generate shell tab completions

@@ -81,6 +81,10 @@ type-only pass if needed.
     `os`/`cpu`-gated optionals). Stable bun (≥1.4.1) is required locally; the
     canonical script registry lives in `src/platform-scripts.ts` — edit scripts there
     (drift-guard test will fail if template and registry diverge).
+11. **`vitepress@1.x` pins `vite@^5.4.14` and is the source of the current audit
+    findings.** Upgrading `vite` requires either waiting for `vitepress` to relax
+    its peer range, or moving to `vitepress@next` (alpha). Do not force-upgrade
+    `vite`/`esbuild` without coordinating the `vitepress` dependency first.
 
 ## Changing the generated app
 
