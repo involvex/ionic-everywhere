@@ -23,7 +23,14 @@ import {
 	MANIFEST_NAME,
 	templateDir,
 } from './scaffold'
-import {deriveAppId, isInteractive, isValidPm, toTitle} from './util'
+import {
+	deriveAppId,
+	isInteractive,
+	isValidPm,
+	pmInstall,
+	pmRun,
+	toTitle,
+} from './util'
 
 export interface UpgradeOptions {
 	projectDir?: string
@@ -337,6 +344,9 @@ export interface UpgradeApplyResult {
 	hookInjected: boolean
 	filesCopied: string[]
 	manifestWritten: boolean
+	depsApplied: number
+	depsSkippedMajor: number
+	postVerifyOk: boolean
 }
 
 function writeManifestAt(
@@ -344,8 +354,9 @@ function writeManifestAt(
 	options: ManifestOptions,
 	version: string,
 	createdAt?: string,
+	capVersions?: Record<string, string>,
 ): void {
-	const manifest = {
+	const manifest: Record<string, unknown> = {
 		schema: 1,
 		generator: '@involvex/ionic-everywhere',
 		generatorVersion: version,
@@ -353,10 +364,71 @@ function writeManifestAt(
 		updatedAt: new Date().toISOString(),
 		options,
 	}
+	if (capVersions && Object.keys(capVersions).length > 0)
+		manifest.capVersions = capVersions
 	writeFileSync(
 		join(root, MANIFEST_NAME),
 		`${JSON.stringify(manifest, null, 2)}\n`,
 	)
+}
+
+function requireCleanGit(root: string): void {
+	if (!existsSync(join(root, '.git'))) return
+	const res = spawnSync('git', ['status', '--porcelain'], {
+		cwd: root,
+		encoding: 'utf8',
+		timeout: 10_000,
+	})
+	if (res.status === 0 && (res.stdout ?? '').trim().length > 0)
+		die(
+			'The project git tree has uncommitted changes. Stage or commit them, or pass --allow-dirty to override.',
+		)
+}
+
+export function applyDepChanges(
+	projectRoot: string,
+	appliable: DepChange[],
+	cliVersion: string,
+	previousCreatedAt?: string,
+): {applied: number; skippedMajor: number} {
+	const pkgPath = join(projectRoot, 'package.json')
+	const raw = readFileSync(pkgPath, 'utf8')
+	const pkg = JSON.parse(raw) as {
+		dependencies?: Record<string, string>
+		devDependencies?: Record<string, string>
+		[k: string]: unknown
+	}
+	const capVersions: Record<string, string> = {}
+	let applied = 0
+	let skippedMajor = 0
+	for (const change of appliable) {
+		if (change.kind === 'major') {
+			skippedMajor++
+			continue
+		}
+		const target = change.to
+		const current =
+			pkg.dependencies?.[change.pkg] ?? pkg.devDependencies?.[change.pkg]
+		if (current === target) continue
+		if (pkg.dependencies?.[change.pkg] !== undefined)
+			pkg.dependencies[change.pkg] = target
+		else if (pkg.devDependencies?.[change.pkg] !== undefined)
+			pkg.devDependencies[change.pkg] = target
+		else continue
+		capVersions[change.pkg] = target
+		applied++
+	}
+	if (applied > 0) {
+		writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
+		writeManifestAt(
+			projectRoot,
+			inferProjectOptions(projectRoot),
+			cliVersion,
+			previousCreatedAt,
+			capVersions,
+		)
+	}
+	return {applied, skippedMajor}
 }
 
 export function applyUpgrade(
@@ -370,6 +442,9 @@ export function applyUpgrade(
 		hookInjected: false,
 		filesCopied: [],
 		manifestWritten: false,
+		depsApplied: 0,
+		depsSkippedMajor: 0,
+		postVerifyOk: false,
 	}
 	if (plan.upToDate) return result
 
@@ -420,6 +495,67 @@ function warnDirtyGit(root: string): void {
 	})
 	if (res.status === 0 && (res.stdout ?? '').trim().length > 0)
 		p.log.warn('The project git tree has uncommitted changes.')
+}
+
+async function runPostDepVerify(
+	root: string,
+	pm: string,
+	android: boolean,
+	electron: boolean,
+): Promise<boolean> {
+	const s = p.spinner()
+	const checks: {label: string; cmd: string}[] = []
+	if (android)
+		checks.push({
+			label: `cap sync android`,
+			cmd: `${pmRun(pm)} cap sync android`,
+		})
+	if (electron)
+		checks.push({
+			label: `cap sync @capawesome/capacitor-electron`,
+			cmd: `${pmRun(pm)} cap sync @capawesome/capacitor-electron`,
+		})
+	checks.push({
+		label: 'typecheck',
+		cmd: `${pm} run typecheck`,
+	})
+	checks.push({
+		label: 'build',
+		cmd: `${pm} run build`,
+	})
+	for (const check of checks) {
+		s.start(check.label)
+		const res = spawnSync('cmd', ['/c', check.cmd], {
+			cwd: root,
+			encoding: 'utf8',
+			timeout: 120_000,
+			shell: false,
+		})
+		if (res.status === 0) s.stop(`${check.label} ok`)
+		else {
+			s.stop(`${check.label} failed`)
+			p.log.error(
+				[
+					`Post-verify failed: ${check.label}`,
+					`Command: ${check.cmd}`,
+					`Exit: ${res.status ?? 'signal'}`,
+					...((res.stdout ?? '').trim().length > 0
+						? [`stdout: ${(res.stdout ?? '').trim().slice(0, 500)}`]
+						: []),
+					...((res.stderr ?? '').trim().length > 0
+						? [`stderr: ${(res.stderr ?? '').trim().slice(0, 500)}`]
+						: []),
+					'',
+					'Rollback:',
+					`  git diff -- package.json`,
+					`  git checkout -- package.json`,
+					`  ${pmInstall(pm)}`,
+				].join('\n'),
+			)
+			return false
+		}
+	}
+	return true
 }
 
 function formatScriptChange(key: string, change: ScriptChange): string {
@@ -521,7 +657,7 @@ export async function runUpgrade(opts: UpgradeOptions): Promise<number> {
 
 	// FEAT-021 pattern: a non-TTY shell cannot confirm the plan. Fail fast
 	// with actionable flags instead of hanging. --check-deps and --deps are
-	// report-only in v1 and safe to run non-interactively.
+	// safe to run non-interactively.
 	const depsMode = opts.checkDeps || opts.deps
 	if (!opts.yes && !opts.dryRun && !depsMode && !isInteractive()) {
 		die(
@@ -558,13 +694,61 @@ export async function runUpgrade(opts: UpgradeOptions): Promise<number> {
 
 	printPlan(plan, depsMode)
 
-	if (opts.dryRun || depsMode) {
-		p.outro(
-			depsMode && !opts.dryRun
-				? 'Report complete - no dependency changes applied (use --deps in a future release for safe patch/minor bumps).'
-				: 'Dry run - nothing was changed.',
-		)
+	if (opts.dryRun) {
+		p.outro('Dry run - nothing was changed.')
 		return 0
+	}
+
+	if (depsMode) {
+		const appliable = plan.depChanges.filter(c => c.kind !== 'up-to-date')
+		if (appliable.length === 0) {
+			p.outro('No dependency changes to apply.')
+			return 0
+		}
+		const majors = plan.depChanges.filter(c => c.kind === 'major')
+		if (majors.length > 0) {
+			p.log.warn(
+				`${majors.length} major bump(s) skipped (manual migration required):`,
+			)
+			for (const m of majors)
+				p.log.message(
+					`  ${m.pkg}: ${m.from === null ? '(missing)' : m.from} -> ${m.to}`,
+				)
+			if (!opts.yes) {
+				const answer = await p.confirm({
+					message: `Apply ${appliable.length} safe change(s) and skip ${majors.length} major(s)?`,
+					initialValue: true,
+				})
+				if (p.isCancel(answer) || answer !== true) {
+					p.cancel('Aborted - nothing was changed.')
+					return 0
+				}
+			}
+		}
+		if (opts.deps && !opts.allowDirty) requireCleanGit(root)
+		const {applied, skippedMajor} = applyDepChanges(
+			root,
+			appliable,
+			cliVersion,
+			plan.previousCreatedAt,
+		)
+		const pm = opts.pm ?? plan.options.pm
+		const verifyOk = await runPostDepVerify(
+			root,
+			pm,
+			plan.options.android,
+			plan.options.electron,
+		)
+		p.log.message(
+			[
+				`Dependencies updated: ${applied} applied, ${skippedMajor} major skipped`,
+				`Post-verify: ${verifyOk ? 'passed' : 'failed (see rollback instructions above)'}`,
+			].join('; '),
+		)
+		p.outro(
+			verifyOk ? 'Upgrade complete.' : 'Upgrade failed - rollback recommended.',
+		)
+		return verifyOk ? 0 : 1
 	}
 
 	warnDirtyGit(root)

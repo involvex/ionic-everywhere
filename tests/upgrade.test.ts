@@ -16,10 +16,12 @@ import {
 	scaffold,
 } from '../packages/ionic-everywhere/src/scaffold'
 import {
+	applyDepChanges,
 	applyUpgrade,
 	compareVersions,
 	diffScripts,
 	inferProjectOptions,
+	planDepChanges,
 	planUpgrade,
 	type UpgradePlan,
 } from '../packages/ionic-everywhere/src/upgrade'
@@ -222,5 +224,88 @@ describe('planUpgrade / applyUpgrade (FEAT-029)', () => {
 		expect(plan.workspaces).toBe('added')
 		applyUpgrade(target, plan)
 		expect(readPkgJson(target).workspaces).toContain('electron')
+	})
+})
+
+describe('applyDepChanges (Phase 2)', () => {
+	function depFixture(): string {
+		const target = makeTemp()
+		writeFileSync(
+			join(target, 'package.json'),
+			JSON.stringify({
+				name: 'dep-app',
+				version: '0.1.0',
+				dependencies: {
+					'@capacitor/core': '^8.5.0',
+					'@ionic/react': '^9.0.1',
+				},
+				devDependencies: {
+					typescript: '^5.8.0',
+				},
+			}),
+		)
+		writeFileSync(
+			join(target, MANIFEST_NAME),
+			JSON.stringify({
+				schema: 1,
+				generatorVersion: generatorVersion(),
+				options: {pm: 'npm'},
+			}),
+		)
+		return target
+	}
+
+	it('applies patch/minor changes to existing deps and skips major', () => {
+		const target = depFixture()
+		const pkgBefore = JSON.parse(
+			readFileSync(join(target, 'package.json'), 'utf8'),
+		)
+		const appliable = planDepChanges(pkgBefore).appliable
+		const {applied, skippedMajor} = applyDepChanges(
+			target,
+			appliable,
+			generatorVersion(),
+		)
+		expect(skippedMajor).toBe(0)
+		expect(applied).toBe(3)
+		const pkgAfter = JSON.parse(
+			readFileSync(join(target, 'package.json'), 'utf8'),
+		)
+		expect(pkgAfter.dependencies['@capacitor/core']).toBe('^8.5.1')
+		expect(pkgAfter.dependencies['@ionic/react']).toBe('^9.0.2')
+		expect(pkgAfter.devDependencies['typescript']).toBe('^5.9.3')
+	})
+
+	it('writes capVersions snapshot into the manifest', () => {
+		const target = depFixture()
+		const pkgBefore = JSON.parse(
+			readFileSync(join(target, 'package.json'), 'utf8'),
+		)
+		const appliable = planDepChanges(pkgBefore).appliable
+		applyDepChanges(target, appliable, generatorVersion())
+		const manifest = JSON.parse(
+			readFileSync(join(target, MANIFEST_NAME), 'utf8'),
+		)
+		expect(manifest.capVersions).toBeDefined()
+		expect(typeof manifest.capVersions).toBe('object')
+		expect(Object.keys(manifest.capVersions).length).toBe(3)
+	})
+
+	it('is idempotent: second apply is a no-op', () => {
+		const target = depFixture()
+		const pkgBefore = JSON.parse(
+			readFileSync(join(target, 'package.json'), 'utf8'),
+		)
+		const appliable = planDepChanges(pkgBefore).appliable
+		applyDepChanges(target, appliable, generatorVersion())
+		const pkgAfterFirst = JSON.parse(
+			readFileSync(join(target, 'package.json'), 'utf8'),
+		)
+		const second = applyDepChanges(target, appliable, generatorVersion())
+		expect(second.applied).toBe(0)
+		const pkgAfterSecond = JSON.parse(
+			readFileSync(join(target, 'package.json'), 'utf8'),
+		)
+		expect(pkgAfterSecond).toEqual(pkgAfterFirst)
 	})
 })
