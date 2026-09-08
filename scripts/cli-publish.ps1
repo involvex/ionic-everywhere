@@ -142,8 +142,14 @@ try {
     if (Test-Path (Join-Path $packageDir 'LICENSE')) {
         git add (Join-Path $packageDir 'LICENSE')
     }
-    git commit -m $commitMessage
-    if ($LASTEXITCODE -ne 0) { throw 'git commit failed' }
+
+    $staged = git diff --cached --name-only
+    if ($staged) {
+        git commit -m $commitMessage
+        if ($LASTEXITCODE -ne 0) { throw 'git commit failed' }
+    } else {
+        Write-Host "Nothing to commit; skipping commit."
+    }
 
     Write-Step "Tagging v$newVersion"
     git tag "v$newVersion"
