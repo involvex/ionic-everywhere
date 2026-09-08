@@ -1,6 +1,6 @@
 {
 	"name": "@involvex/ionic-everywhere",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "Scaffold one responsive Ionic React codebase that builds Web, Android and Desktop apps.",
 	"keywords": [
 		"ionic",
@@ -26,9 +26,9 @@
 	"files": [
 		"dist",
 		"templates",
-		"../../README.md",
-		"../../LICENSE",
-		"../../.github/FUNDING.yml"
+		"README.md",
+		"CHANGELOG.md",
+		"LICENSE"
 	],
 	"scripts": {
 		"build": "bun build src/cli.ts --outfile=dist/cli.js --target=node --format=esm",
@@ -46,5 +46,8 @@
 	},
 	"engines": {
 		"node": ">=20"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }

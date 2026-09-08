@@ -19,6 +19,7 @@
 	"scripts": {
 		"prebuild": "bun run verify",
 		"build": "bun run --filter @involvex/ionic-everywhere build",
+		"changelog": "bun scripts/generate-changelog.mjs",
 		"ci:lint-test": "bun run verify && npx tsc -p packages/ionic-everywhere/tsconfig.json --noEmit && bun run build",
 		"clean": "bun scripts/clean.mjs",
 		"cli:dev": "bun run --filter @involvex/ionic-everywhere dev",
