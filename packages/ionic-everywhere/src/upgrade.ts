@@ -23,6 +23,7 @@ import {
 	MANIFEST_NAME,
 	templateDir,
 } from './scaffold'
+import {renderMajorAdvisory} from './upgrade-advisory'
 import {
 	deriveAppId,
 	isInteractive,
@@ -619,10 +620,14 @@ function printPlan(plan: UpgradePlan, showDeps = false): void {
 				p.log.message(
 					`  ${change.pkg}: ${change.from === null ? '(missing)' : change.from} -> ${change.to}  [${formatDepKind(change.kind)}]`,
 				)
-			for (const change of plan.majorAdvisory)
-				p.log.message(
-					`  ${change.pkg}: ${change.from === null ? '(missing)' : change.from} -> ${change.to}  [manual]`,
-				)
+			if (plan.majorAdvisory.length > 0) {
+				const advisoryLines = renderMajorAdvisory(plan.majorAdvisory, {
+					android: plan.options.android,
+					electron: plan.options.electron,
+					projectRoot: '',
+				})
+				for (const line of advisoryLines) p.log.message(line)
+			}
 		} else {
 			p.log.message('Dependency updates: none (all blessed deps up to date)')
 		}

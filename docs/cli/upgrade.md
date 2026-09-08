@@ -56,7 +56,9 @@ ionic-everywhere upgrade --deps --yes
 4. Runs `typecheck` and `build` to verify the project still compiles.
 5. Writes a `capVersions` snapshot into the manifest for future diffing.
 
-**Major bumps are never applied automatically.** They appear as `manual` in the report with a copy-pasteable checklist. For `@capawesome/capacitor-electron` majors, the checklist includes backing up `electron/` customizations, removing the platform dir, and re-adding via `cap add @capawesome/capacitor-electron`.
+**Major bumps are never applied automatically.** They appear as `manual` in the report with a copy-pasteable checklist generated from the project's bundled Capacitor upgrade guides. For `@capawesome/capacitor-electron` majors, the checklist includes backing up `electron/` customizations, removing the platform dir, and re-adding via `cap add @capawesome/capacitor-electron`. The checklist also prints environment reminders (JDK 21+ for Cap 8+, stable bun channel).
+
+When no bundled guide exists for the detected version jump (e.g. a future Capacitor 9), the CLI prints a fallback note pointing to upstream docs.
 
 ## Safety
 
