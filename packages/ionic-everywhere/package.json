@@ -25,7 +25,10 @@
 	},
 	"files": [
 		"dist",
-		"templates"
+		"templates",
+		"../../README.md",
+		"../../LICENSE",
+		"../../.github/FUNDING.yml"
 	],
 	"scripts": {
 		"build": "bun build src/cli.ts --outfile=dist/cli.js --target=node --format=esm",
