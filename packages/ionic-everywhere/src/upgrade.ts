@@ -619,7 +619,10 @@ function printPlan(plan: UpgradePlan, showDeps = false): void {
 				p.log.message(
 					`  ${change.pkg}: ${change.from === null ? '(missing)' : change.from} -> ${change.to}  [${formatDepKind(change.kind)}]`,
 				)
-			for (const line of plan.majorAdvisory) p.log.message(`  ${line}`)
+			for (const change of plan.majorAdvisory)
+				p.log.message(
+					`  ${change.pkg}: ${change.from === null ? '(missing)' : change.from} -> ${change.to}  [manual]`,
+				)
 		} else {
 			p.log.message('Dependency updates: none (all blessed deps up to date)')
 		}
