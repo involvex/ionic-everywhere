@@ -34,9 +34,9 @@
 		"test:coverage": "vitest run --coverage",
 		"test:watch": "vitest",
 		"verify": "bun run format && bun run lint:fix && bun run test",
-		"version:major": "bun pm version major && bun run build && bun --cwd packages/ionic-everywhere pm version major",
-		"version:minor": "bun pm version minor && bun run build && bun --cwd packages/ionic-everywhere pm version minor",
-		"version:patch": "bun pm version patch && bun run build && bun --cwd packages/ionic-everywhere pm version patch"
+		"version:major": "bun pm version major && bun run build && bun --cwd=packages/ionic-everywhere pm version major",
+		"version:minor": "bun pm version minor && bun run build && bun --cwd=packages/ionic-everywhere pm version minor",
+		"version:patch": "bun pm version patch && bun run build && bun --cwd=packages/ionic-everywhere pm version patch"
 	},
 	"prettier": "@involvex/prettier-config",
 	"devDependencies": {
