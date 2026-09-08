@@ -9,6 +9,7 @@ import {
 } from 'node:fs'
 import {basename, dirname, isAbsolute, join, resolve} from 'node:path'
 import {findProjectRoot} from './add'
+import {BLESSED_DEPS, type DepChange, type DepKind} from './cap-versions'
 import {readManifest, type GeneratorManifest} from './list'
 import {computeSyncedScripts, syncPlatformScripts} from './platform-scripts'
 import {
@@ -30,6 +31,9 @@ export interface UpgradeOptions {
 	dryRun?: boolean
 	force?: boolean
 	yes?: boolean
+	checkDeps?: boolean
+	deps?: boolean
+	allowDirty?: boolean
 }
 
 export interface ManifestOptions {
@@ -56,6 +60,9 @@ export interface UpgradePlan {
 	tokenDrift: string[]
 	versionBump: {from: string; to: string} | null
 	previousCreatedAt?: string
+	depChanges: DepChange[]
+	majorAdvisory: DepChange[]
+	syncNeeded: boolean
 }
 
 /**
@@ -185,10 +192,63 @@ export function diffScripts(
 	return changes
 }
 
+function parseVersion(v: string): {nums: number[]; pre: string | null} {
+	const clean = v.replace(/^[v^]/, '').trim()
+	const hyphen = clean.indexOf('-')
+	const core = hyphen === -1 ? clean : clean.slice(0, hyphen)
+	const pre = hyphen === -1 ? null : clean.slice(hyphen + 1)
+	const nums = core.split('.').map(n => Number.parseInt(n, 10) || 0)
+	return {nums, pre}
+}
+
+function versionMajorMinor(v: string): {major: number; minor: number} {
+	const {nums} = parseVersion(v)
+	return {major: nums[0] ?? 0, minor: nums[1] ?? 0}
+}
+
+export function classifyDepChange(from: string | null, to: string): DepKind {
+	if (from === null) return 'new'
+	const normFrom = from.replace(/^[v^]/, '').trim()
+	const normTo = to.replace(/^[v^]/, '').trim()
+	if (normFrom === normTo) return 'up-to-date'
+	const target = versionMajorMinor(normTo)
+	const current = versionMajorMinor(normFrom)
+	if (target.major !== current.major) return 'major'
+	if (target.minor !== current.minor) return 'minor'
+	return 'patch'
+}
+
+export function planDepChanges(pkg: Record<string, unknown>): {
+	appliable: DepChange[]
+	advisory: DepChange[]
+} {
+	const allDeps: Record<string, string> = {
+		...((pkg.dependencies as Record<string, string> | undefined) ?? {}),
+		...((pkg.devDependencies as Record<string, string> | undefined) ?? {}),
+	}
+	const appliable: DepChange[] = []
+	const advisory: DepChange[] = []
+	for (const [name, blessed] of Object.entries(BLESSED_DEPS)) {
+		const current = allDeps[name] ?? null
+		if (current === blessed) continue
+		const kind = classifyDepChange(current, blessed)
+		const change: DepChange = {
+			pkg: name,
+			from: current,
+			to: blessed,
+			kind,
+		}
+		if (kind === 'major') advisory.push(change)
+		else appliable.push(change)
+	}
+	return {appliable, advisory}
+}
+
 export function planUpgrade(
 	projectRoot: string,
 	cliVersion: string = generatorVersion(),
 	force = false,
+	checkDeps = false,
 ): UpgradePlan {
 	const read = readManifest(projectRoot)
 	if (read.state === 'malformed')
@@ -210,13 +270,21 @@ export function planUpgrade(
 		filesToCopy: [],
 		tokenDrift: [],
 		versionBump: null,
+		depChanges: [],
+		majorAdvisory: [],
+		syncNeeded: false,
 		...(manifest?.createdAt ? {previousCreatedAt: manifest.createdAt} : {}),
 	}
 
 	if (read.state === 'ok') {
 		const current = manifest?.generatorVersion ?? '0.0.0'
 		const cmp = compareVersions(current, cliVersion)
-		if (cmp >= 0 && !force) return empty
+		if (cmp >= 0 && !force) {
+			const {appliable, advisory} = checkDeps
+				? planDepChanges(pkg as unknown as Record<string, unknown>)
+				: {appliable: [] as DepChange[], advisory: [] as DepChange[]}
+			if (appliable.length === 0 && advisory.length === 0) return empty
+		}
 	}
 
 	const scriptsNow = pkg.scripts ?? {}
@@ -231,6 +299,10 @@ export function planUpgrade(
 	)
 	const ws = Array.isArray(pkg.workspaces) ? (pkg.workspaces as unknown[]) : []
 	const hookState = electronDevToolsHookState(projectRoot)
+
+	const {appliable: depChanges, advisory: majorAdvisory} = checkDeps
+		? planDepChanges(pkg as unknown as Record<string, unknown>)
+		: {appliable: [] as DepChange[], advisory: [] as DepChange[]}
 
 	return {
 		upToDate: false,
@@ -252,6 +324,9 @@ export function planUpgrade(
 						to: cliVersion,
 					}
 				: null,
+		depChanges,
+		majorAdvisory,
+		syncNeeded: depChanges.length > 0,
 		...(manifest?.createdAt ? {previousCreatedAt: manifest.createdAt} : {}),
 	}
 }
@@ -353,7 +428,22 @@ function formatScriptChange(key: string, change: ScriptChange): string {
 	return `  ${key}: ${from}  ->  ${to}`
 }
 
-function printPlan(plan: UpgradePlan): void {
+function formatDepKind(kind: DepKind): string {
+	switch (kind) {
+		case 'up-to-date':
+			return 'up-to-date'
+		case 'patch':
+			return 'safe'
+		case 'minor':
+			return 'safe'
+		case 'major':
+			return 'manual'
+		case 'new':
+			return 'new'
+	}
+}
+
+function printPlan(plan: UpgradePlan, showDeps = false): void {
 	if (plan.adopt)
 		p.log.info(
 			`No ${MANIFEST_NAME} found - adopting this project and recording inferred options (pm: ${plan.options.pm}, id: ${plan.options.appId}).`,
@@ -385,6 +475,19 @@ function printPlan(plan: UpgradePlan): void {
 		p.log.warn(
 			`Unreplaced tokens found (report-only, fix manually): ${plan.tokenDrift.join(', ')}`,
 		)
+	const appliable = plan.depChanges.filter(c => c.kind !== 'up-to-date')
+	if (showDeps) {
+		if (appliable.length > 0 || plan.majorAdvisory.length > 0) {
+			p.log.message('Dependency updates:')
+			for (const change of appliable)
+				p.log.message(
+					`  ${change.pkg}: ${change.from === null ? '(missing)' : change.from} -> ${change.to}  [${formatDepKind(change.kind)}]`,
+				)
+			for (const line of plan.majorAdvisory) p.log.message(`  ${line}`)
+		} else {
+			p.log.message('Dependency updates: none (all blessed deps up to date)')
+		}
+	}
 }
 
 function die(msg: string): never {
@@ -417,13 +520,16 @@ export async function runUpgrade(opts: UpgradeOptions): Promise<number> {
 		die(`No package.json in ${root}. Not an ionic-everywhere project root.`)
 
 	// FEAT-021 pattern: a non-TTY shell cannot confirm the plan. Fail fast
-	// with actionable flags instead of hanging.
-	if (!opts.yes && !opts.dryRun && !isInteractive()) {
+	// with actionable flags instead of hanging. --check-deps and --deps are
+	// report-only in v1 and safe to run non-interactively.
+	const depsMode = opts.checkDeps || opts.deps
+	if (!opts.yes && !opts.dryRun && !depsMode && !isInteractive()) {
 		die(
 			[
 				'Non-interactive shell detected - prompts are unavailable.',
-				'Re-run with --yes to apply the plan, or --dry-run to preview it:',
+				'Re-run with --yes to apply the plan, --dry-run to preview it, or --check-deps for a safe report:',
 				'  ionic-everywhere upgrade --yes',
+				'  ionic-everywhere upgrade --check-deps',
 			].join('\n'),
 		)
 	}
@@ -431,7 +537,7 @@ export async function runUpgrade(opts: UpgradeOptions): Promise<number> {
 	const cliVersion = generatorVersion()
 	let plan: UpgradePlan
 	try {
-		plan = planUpgrade(root, cliVersion, opts.force === true)
+		plan = planUpgrade(root, cliVersion, opts.force === true, depsMode)
 	} catch (err) {
 		p.log.error(err instanceof Error ? err.message : String(err))
 		return 1
@@ -440,18 +546,24 @@ export async function runUpgrade(opts: UpgradeOptions): Promise<number> {
 	p.intro(`ionic-everywhere upgrade - ${basename(root)}`)
 
 	if (plan.upToDate) {
+		const depNote =
+			depsMode && plan.depChanges.length === 0
+				? ' (dependencies also up to date)'
+				: ''
 		p.outro(
-			`Already up to date${
-				plan.previousCreatedAt ? '' : ''
-			} (generator ${cliVersion}). Use --force to re-apply.`,
+			`Already up to date${depNote} (generator ${cliVersion}). Use --force to re-apply.`,
 		)
 		return 0
 	}
 
-	printPlan(plan)
+	printPlan(plan, depsMode)
 
-	if (opts.dryRun) {
-		p.outro('Dry run - nothing was changed.')
+	if (opts.dryRun || depsMode) {
+		p.outro(
+			depsMode && !opts.dryRun
+				? 'Report complete - no dependency changes applied (use --deps in a future release for safe patch/minor bumps).'
+				: 'Dry run - nothing was changed.',
+		)
 		return 0
 	}
 
@@ -469,10 +581,15 @@ export async function runUpgrade(opts: UpgradeOptions): Promise<number> {
 	}
 
 	const result = applyUpgrade(root, plan, cliVersion)
+	const depCount = plan.depChanges.filter(c => c.kind !== 'up-to-date').length
 	p.log.message(
 		`Scripts updated: ${result.scriptsUpdated}; files copied: ${result.filesCopied.length}${
 			result.hookInjected ? '; DevTools hook injected' : ''
-		}${result.workspacesAdded ? '; electron workspace added' : ''}`,
+		}${result.workspacesAdded ? '; electron workspace added' : ''}${
+			depCount > 0
+				? `; deps available: ${depCount} (re-run with --deps to apply)`
+				: ''
+		}`,
 	)
 	p.outro('Upgrade complete.')
 	return 0

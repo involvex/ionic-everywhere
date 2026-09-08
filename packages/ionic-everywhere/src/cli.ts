@@ -33,9 +33,14 @@ Usage:
   ionic-everywhere doctor                Check the environment
   ionic-everywhere list                  Show generator info for the nearest
                                          ionic-everywhere project
-   ionic-everywhere upgrade               Bring an existing project's tooling
-                                           up to the current template (scripts,
-                                           new template files, manifest)
+    ionic-everywhere upgrade               Bring an existing project's tooling
+                                            up to the current template (scripts,
+                                            new template files, manifest)
+    ionic-everywhere upgrade --check-deps  Report dependency drift vs the blessed
+                                            registry (safe, non-interactive)
+    ionic-everywhere upgrade --deps        Apply safe patch/minor dependency bumps
+                                            (Phase 2; currently report-only)
+    ionic-everywhere upgrade --allow-dirty Apply even with uncommitted git changes
    ionic-everywhere build                 Run project build scripts (defaults to build:all)
    ionic-everywhere sign                  Build and sign a release APK for Android
    ionic-everywhere completions <shell>   Generate shell tab completions
@@ -54,8 +59,11 @@ Options:
   --json              (doctor) Print a machine-readable JSON report and exit
                       non-zero when required checks fail; (list) print the raw
                       generator manifest
-  --dry-run           (upgrade) Print the plan without changing anything
-  --force             (upgrade) Re-apply even when versions already match
+   --dry-run           (upgrade) Print the plan without changing anything
+   --force             (upgrade) Re-apply even when versions already match
+   --check-deps        (upgrade) Report dependency drift vs blessed registry
+   --deps              (upgrade) Apply safe patch/minor dependency bumps
+   --allow-dirty       (upgrade) Allow uncommitted git changes
   --no-android        Skip adding the Android platform
   --no-electron       Skip adding the desktop (Electron) platform
   --no-install        Skip dependency install and platform generation
@@ -180,6 +188,9 @@ async function main(): Promise<number> {
 				dryRun: flags['dry-run'] === true,
 				force: flags.force === true,
 				yes: flags.yes === true,
+				checkDeps: flags['check-deps'] === true,
+				deps: flags.deps === true,
+				allowDirty: flags['allow-dirty'] === true,
 			}
 			return runUpgrade(opts)
 		}
