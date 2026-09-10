@@ -58,7 +58,7 @@
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.68.0",
 		"vitepress": "^1.6.4",
-		"vitest": "^4.1.11"
+		"vitest": "^5.0.0"
 	},
 	"sponsor": {
 		"url": "https://github.com/sponsors/involvex"
