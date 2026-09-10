@@ -44,7 +44,7 @@
 		"@eslint/js": "^10.0.1",
 		"@involvex/prettier-config": "^0.0.6",
 		"@types/node": "^26.3.0",
-		"@vitest/coverage-v8": "^4.1.11",
+		"@vitest/coverage-v8": "^5.0.0",
 		"eslint": "^10.0.0",
 		"globals": "^17.11.0",
 		"prettier": "^3.8.2",
