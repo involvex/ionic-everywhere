@@ -30,13 +30,18 @@
 		"@capacitor/core": "^8.5.0",
 		"@capacitor/preferences": "^8.0.1",
 		"@capawesome/capacitor-electron": "^0.1.0",
-		"@ionic/react": "^9.0.0",
-		"@ionic/react-router": "^9.0.0",
+		"@ionic/react": "^9.0.3",
+		"@ionic/react-router": "^9.0.3",
 		"ionicons": "^8.1.0",
 		"react": "^19.2.8",
 		"react-dom": "^19.2.8",
-		"react-router": "^6.30.6",
-		"react-router-dom": "^6.30.6"
+		"react-router": "^7.18.3",
+		"react-router-dom": "^7.18.3"
+	},
+	"overrides": {
+		"@ionic/react-router": {
+			"react-router": ">=7.18.3"
+		}
 	},
 	"devDependencies": {
 		"@capacitor/cli": "^8.5.0",
