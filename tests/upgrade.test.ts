@@ -278,7 +278,7 @@ describe('applyDepChanges (Phase 2)', () => {
 			readFileSync(join(target, 'package.json'), 'utf8'),
 		)
 		expect(pkgAfter.dependencies['@capacitor/core']).toBe('^8.5.1')
-		expect(pkgAfter.dependencies['@ionic/react']).toBe('^9.0.2')
+		expect(pkgAfter.dependencies['@ionic/react']).toBe('^9.0.3')
 		expect(pkgAfter.devDependencies['typescript']).toBe('^5.9.3')
 	})
 
