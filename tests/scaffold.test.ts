@@ -9,7 +9,7 @@ import {
 } from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
-import {afterAll, describe, expect, it} from 'vitest'
+import {afterAll, describe, expect, it, vi} from 'vitest'
 import {setupAgentsSkills} from '../packages/ionic-everywhere/src/agents-skills'
 import {
 	buildBuildAllScript,
@@ -28,6 +28,10 @@ import {
 	templateDir,
 	tokenizeCopiedTree,
 } from '../packages/ionic-everywhere/src/scaffold'
+
+vi.mock('../packages/ionic-everywhere/src/step', () => ({
+	step: vi.fn().mockResolvedValue(true),
+}))
 
 const tempDirs: string[] = []
 
