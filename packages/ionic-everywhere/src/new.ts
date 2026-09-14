@@ -1,6 +1,7 @@
 import * as p from '@clack/prompts'
 import {existsSync, rmSync} from 'node:fs'
 import {isAbsolute, join, resolve} from 'node:path'
+import {setupAgentsSkills} from './agents-skills'
 import {formatReport, runChecks} from './doctor'
 import {prunePlatformScripts} from './platform-scripts'
 import {runStreaming} from './run'
@@ -544,6 +545,19 @@ export async function runNew(
 		}
 		if (gitFailed) s.stop('Git init skipped (git missing or not configured)')
 		else s.stop('Git repository initialized')
+	}
+
+	// NEW: Agent skills setup
+	if (cfg.install) {
+		if (!opts.yes && interactive) {
+			const wantAgents = await prompts.confirm(
+				'Set up .agents/skills/ for AI agent skills?',
+				true,
+			)
+			if (wantAgents) {
+				await setupAgentsSkills(cfg.targetDir)
+			}
+		}
 	}
 
 	const checks = runChecks().filter(c => !c.ok && !c.required)

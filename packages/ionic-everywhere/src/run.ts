@@ -22,17 +22,18 @@ export interface RunStreamingOptions {
 const DEFAULT_TAIL_LINES = 50
 
 export function runStreaming(
-	cmd: string,
+	cmd: string | string[],
 	cwd: string,
 	opts: RunStreamingOptions = {},
 ): Promise<RunResult> {
 	const tailLimit = opts.tailLines ?? DEFAULT_TAIL_LINES
 	const tail: string[] = []
 	let log: WriteStream | undefined
+	const cmdStr = Array.isArray(cmd) ? cmd.join(' ') : cmd
 	if (opts.logFile) {
 		mkdirSync(dirname(opts.logFile), {recursive: true})
 		log = createWriteStream(opts.logFile, {flags: 'a'})
-		log.write(`\n[${new Date().toISOString()}] cwd=${cwd}\n$ ${cmd}\n`)
+		log.write(`\n[${new Date().toISOString()}] cwd=${cwd}\n$ ${cmdStr}\n`)
 	}
 
 	return new Promise(resolve => {
@@ -50,7 +51,9 @@ export function runStreaming(
 				env = {...process.env, PATH: [homeBin, ...pathEntries].join(delimiter)}
 			}
 		}
-		const child = spawn(cmd, {cwd, shell: true, env})
+		const child = Array.isArray(cmd)
+			? spawn(cmd[0], cmd.slice(1), {cwd, env})
+			: spawn(cmd, {cwd, shell: true, env})
 		const push = (line: string) => {
 			if (line.length === 0) return
 			tail.push(line)

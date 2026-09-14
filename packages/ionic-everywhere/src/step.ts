@@ -12,7 +12,7 @@ function truncateLine(line: string, max = 60): string {
 export async function step(
 	s: ReturnType<typeof p.spinner>,
 	messages: {start: string; ok: string; fail: string},
-	cmd: string,
+	cmd: string | string[],
 	cwd: string,
 ): Promise<boolean> {
 	s.start(messages.start)

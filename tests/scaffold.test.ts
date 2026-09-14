@@ -10,6 +10,7 @@ import {
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {afterAll, describe, expect, it} from 'vitest'
+import {setupAgentsSkills} from '../packages/ionic-everywhere/src/agents-skills'
 import {
 	buildBuildAllScript,
 	buildSyncScript,
@@ -695,5 +696,38 @@ describe('interactive scaffolding options (layout, styling, theme)', () => {
 		expect(manifest.options.layout).toBe('drawer')
 		expect(manifest.options.styling).toBe('tailwind')
 		expect(manifest.options.theme).toBe('hacker')
+	})
+})
+
+describe('setupAgentsSkills', () => {
+	it('creates .agents/skills/ionic-everywhere/SKILL.md and AGENTS.md', async () => {
+		const target = makeTemp()
+		await setupAgentsSkills(target)
+		expect(
+			existsSync(
+				join(target, '.agents', 'skills', 'ionic-everywhere', 'SKILL.md'),
+			),
+		).toBe(true)
+		const skill = readFileSync(
+			join(target, '.agents', 'skills', 'ionic-everywhere', 'SKILL.md'),
+			'utf8',
+		)
+		expect(skill).toContain('name: ionic-everywhere')
+		expect(existsSync(join(target, 'AGENTS.md'))).toBe(true)
+		const agents = readFileSync(join(target, 'AGENTS.md'), 'utf8')
+		expect(agents).toContain(
+			'npx skills add https://github.com/involvex/ionic-everywhere.git',
+		)
+	})
+
+	it('is idempotent — works if .agents/skills/ already exists', async () => {
+		const target = makeTemp()
+		await setupAgentsSkills(target)
+		await setupAgentsSkills(target)
+		expect(
+			existsSync(
+				join(target, '.agents', 'skills', 'ionic-everywhere', 'SKILL.md'),
+			),
+		).toBe(true)
 	})
 })
