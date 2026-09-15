@@ -1,3 +1,7 @@
+## [0.1.6] - 2026-09-15
+
+- Patch release with publishing pipeline improvements.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
