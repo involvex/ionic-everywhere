@@ -1,6 +1,6 @@
 {
 	"name": "ionic-everywhere-monorepo",
-	"version": "0.1.6",
+	"version": "0.2.0",
 	"private": true,
 	"description": "@involvex/ionic-everywhere - one responsive Ionic React codebase that builds web, Android and desktop",
 	"repository": {

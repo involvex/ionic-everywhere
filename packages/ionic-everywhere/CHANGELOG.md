@@ -1,5 +1,7 @@
 ## Unreleased
 
+## [0.2.0] - 2026-10-13
+
 ### Added
 
 - Expo-style named templates via `-t` / `--template`: `tabs`, `blank`,
