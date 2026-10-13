@@ -25,6 +25,10 @@ export interface ScaffoldOptions {
 	tests?: boolean
 	/** Template variant ('default' / 'full' or 'minimal'). */
 	templateVariant?: string
+	/** Canonical catalog id (tabs | blank | with-ai | with-localai). */
+	templateId?: string
+	/** Feature overlay id (ai | localai) from the template catalog. */
+	feature?: string
 	layout?: string
 	styling?: string
 	theme?: string
@@ -68,7 +72,8 @@ const TEST_SCRIPTS: Record<string, string> = {
 }
 
 export function templateDir(variant = 'default'): string {
-	const dir = variant === 'minimal' ? 'minimal' : 'default'
+	const dir =
+		variant === 'minimal' ? 'minimal' : variant === 'vue' ? 'vue' : 'default'
 	return join(dirname(fileURLToPath(import.meta.url)), '..', 'templates', dir)
 }
 
@@ -240,13 +245,15 @@ export function overlayDir(type: string, name: string): string {
 }
 
 export function applyOverlays(targetDir: string, opts: ScaffoldOptions): void {
-	if (opts.layout && opts.layout !== 'tabs') {
+	const isVue = opts.templateVariant === 'vue'
+	// Layout/style/feature overlays are React-authored; skip on Vue base.
+	if (!isVue && opts.layout && opts.layout !== 'tabs') {
 		const src = overlayDir('layout', opts.layout)
 		if (existsSync(src)) {
 			cpSync(src, targetDir, {recursive: true, force: true})
 		}
 	}
-	if (opts.styling && opts.styling !== 'ionic-css') {
+	if (!isVue && opts.styling && opts.styling !== 'ionic-css') {
 		const src = overlayDir('style', opts.styling)
 		if (existsSync(src)) {
 			cpSync(src, targetDir, {recursive: true, force: true})
@@ -258,6 +265,62 @@ export function applyOverlays(targetDir: string, opts: ScaffoldOptions): void {
 			cpSync(src, targetDir, {recursive: true, force: true})
 		}
 	}
+	if (!isVue && opts.feature) {
+		const src = overlayDir('feature', opts.feature)
+		if (existsSync(src)) {
+			cpSync(src, targetDir, {recursive: true, force: true})
+		}
+	}
+}
+
+/** Extra dependencies injected by feature overlays (with-ai / with-localai). */
+const FEATURE_DEPS: Record<
+	string,
+	{
+		dependencies?: Record<string, string>
+		devDependencies?: Record<string, string>
+	}
+> = {
+	ai: {
+		dependencies: {
+			'@opencode/client': '^0.1.0',
+		},
+	},
+	localai: {
+		dependencies: {
+			'llama-cpp-capacitor': '^0.1.5',
+			'@mlc-ai/web-llm': '^0.2.79',
+		},
+	},
+}
+
+/**
+ * Merge feature-template dependency ranges into the generated package.json.
+ * Overlay files are already copied by applyOverlays(); this only patches deps.
+ */
+export function applyFeatureScaffold(
+	_targetDir: string,
+	pkgPath: string,
+	feature?: string,
+): void {
+	if (!feature) return
+	const extra = FEATURE_DEPS[feature]
+	if (!extra) return
+	if (!existsSync(pkgPath)) return
+	const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
+		dependencies?: Record<string, string>
+		devDependencies?: Record<string, string>
+	}
+	if (extra.dependencies) {
+		pkg.dependencies = {...(pkg.dependencies ?? {}), ...extra.dependencies}
+	}
+	if (extra.devDependencies) {
+		pkg.devDependencies = {
+			...(pkg.devDependencies ?? {}),
+			...extra.devDependencies,
+		}
+	}
+	writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
 }
 
 const STYLING_DEV_DEPS: Record<string, Record<string, string>> = {
@@ -319,6 +382,7 @@ export function writeGeneratorManifest(opts: ScaffoldOptions): void {
 			android: opts.android ?? true,
 			electron: opts.electron ?? true,
 			tests: opts.tests ?? false,
+			template: opts.templateId ?? 'tabs',
 			layout: opts.layout ?? 'tabs',
 			styling: opts.styling ?? 'ionic-css',
 			theme: opts.theme ?? 'light-dark',
@@ -345,6 +409,7 @@ export function scaffold(opts: ScaffoldOptions): string[] {
 	}
 	applyTestingScaffold(opts.targetDir, pkgPath, opts.tests, opts.pm)
 	applyStylingScaffold(opts.targetDir, pkgPath, opts.styling)
+	applyFeatureScaffold(opts.targetDir, pkgPath, opts.feature)
 	writeGeneratorManifest(opts)
 	return written
 }
@@ -417,6 +482,152 @@ export function ensureElectronDevToolsHook(appRoot: string): boolean {
 		cfgPath,
 		`${original.slice(0, closer)}${snippet}${original.slice(closer)}`,
 	)
+	return true
+}
+
+/**
+ * After `cap add @capawesome/capacitor-electron`, inject a full local-AI
+ * bridge for the with-localai template:
+ *  - localai-sidecar.mjs  (node-llama-cpp session helper)
+ *  - localai-preload.cjs  (contextBridge → window.localAi.chat)
+ *  - localai-ipc.mjs      (ipcMain handler)
+ *  - patch main.ts + capacitor.electron.config.ts to register them
+ * Idempotent; skips if the electron folder is missing.
+ */
+export function ensureLocalAiElectronHook(appRoot: string): boolean {
+	const electronDir = join(appRoot, 'electron')
+	if (!existsSync(electronDir)) return false
+
+	const sidecarPath = join(electronDir, 'localai-sidecar.mjs')
+	if (!existsSync(sidecarPath)) {
+		writeFileSync(
+			sidecarPath,
+			[
+				'/** On-device LLM helper (node-llama-cpp). */',
+				"export const LOCALAI_SIDECAR = 'node-llama-cpp'",
+				'',
+				'export async function createLocalAiSession(modelPath) {',
+				"  const {getLlama, LlamaChatSession} = await import('node-llama-cpp')",
+				'  const llama = await getLlama()',
+				'  const model = await llama.loadModel({modelPath})',
+				'  const context = await model.createContext()',
+				'  return new LlamaChatSession({contextSequence: context.getSequence()})',
+				'}',
+				'',
+				'export async function chatOnce({modelPath, prompt, maxTokens}) {',
+				'  const session = await createLocalAiSession(modelPath)',
+				'  const reply = await session.prompt(prompt, {',
+				'    maxTokens: maxTokens ?? 256,',
+				'  })',
+				'  return typeof reply === "string" ? reply : String(reply ?? "")',
+				'}',
+				'',
+			].join('\n'),
+		)
+	}
+
+	const preloadPath = join(electronDir, 'localai-preload.cjs')
+	if (!existsSync(preloadPath)) {
+		writeFileSync(
+			preloadPath,
+			[
+				"'use strict'",
+				"const {contextBridge, ipcRenderer} = require('electron')",
+				'',
+				'contextBridge.exposeInMainWorld("localAi", {',
+				'  chat: opts => ipcRenderer.invoke("localai:chat", opts),',
+				'})',
+				'',
+			].join('\n'),
+		)
+	}
+
+	const ipcPath = join(electronDir, 'localai-ipc.mjs')
+	if (!existsSync(ipcPath)) {
+		writeFileSync(
+			ipcPath,
+			[
+				"import {ipcMain, session} from 'electron'",
+				"import {fileURLToPath} from 'node:url'",
+				"import {dirname, join} from 'node:path'",
+				"import {chatOnce} from './localai-sidecar.mjs'",
+				'',
+				'const __dirname = dirname(fileURLToPath(import.meta.url))',
+				'',
+				'let registered = false',
+				'',
+				'export function registerLocalAiIpc() {',
+				'  if (registered) return',
+				'  registered = true',
+				'  try {',
+				'    session.defaultSession.registerPreloadScript({',
+				"      type: 'frame',",
+				'      filePath: join(__dirname, "localai-preload.cjs"),',
+				'    })',
+				'  } catch (err) {',
+				'    console.warn("[localai] registerPreloadScript failed:", err)',
+				'  }',
+				'  ipcMain.handle("localai:chat", async (_event, opts) => {',
+				'    return chatOnce(opts ?? {})',
+				'  })',
+				'}',
+				'',
+			].join('\n'),
+		)
+	}
+
+	const mainPath = join(electronDir, 'main.ts')
+	if (existsSync(mainPath)) {
+		let main = readFileSync(mainPath, 'utf8')
+		if (!main.includes('registerLocalAiIpc')) {
+			main =
+				`import {registerLocalAiIpc} from './localai-ipc.mjs'\n` +
+				`registerLocalAiIpc()\n\n` +
+				main
+			writeFileSync(mainPath, main)
+		}
+	}
+
+	const cfgPath = join(electronDir, 'capacitor.electron.config.ts')
+	if (existsSync(cfgPath)) {
+		let cfg = readFileSync(cfgPath, 'utf8')
+		if (!cfg.includes('registerLocalAiIpc') && !cfg.includes('localai-ipc')) {
+			if (/beforeReady\s*:/.test(cfg)) {
+				cfg = cfg.replace(
+					/beforeReady\s*:\s*\([^)]*\)\s*=>\s*\{/,
+					match =>
+						`${match}\n      // ionic-everywhere with-localai\n      void import('./localai-ipc.mjs').then(m => m.registerLocalAiIpc())`,
+				)
+			} else if (/hooks\s*:\s*\{/.test(cfg)) {
+				cfg = cfg.replace(
+					/hooks\s*:\s*\{/,
+					`hooks: {\n    beforeReady: () => {\n      void import('./localai-ipc.mjs').then(m => m.registerLocalAiIpc())\n    },`,
+				)
+			} else {
+				const closer = cfg.lastIndexOf('})')
+				if (closer !== -1) {
+					cfg =
+						cfg.slice(0, closer) +
+						`  hooks: {\n    beforeReady: () => {\n      void import('./localai-ipc.mjs').then(m => m.registerLocalAiIpc())\n    },\n  },\n` +
+						cfg.slice(closer)
+				}
+			}
+			writeFileSync(cfgPath, cfg)
+		}
+	}
+
+	const pkgPath = join(electronDir, 'package.json')
+	if (existsSync(pkgPath)) {
+		const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
+			dependencies?: Record<string, string>
+			devDependencies?: Record<string, string>
+		}
+		pkg.dependencies = {
+			...(pkg.dependencies ?? {}),
+			'node-llama-cpp': '^3.10.0',
+		}
+		writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
+	}
 	return true
 }
 

@@ -22,6 +22,7 @@ import {
 	applyRunner,
 	applyTokens,
 	applyWorkspaces,
+	ensureLocalAiElectronHook,
 	generatorVersion,
 	MANIFEST_NAME,
 	scaffold,
@@ -700,6 +701,166 @@ describe('interactive scaffolding options (layout, styling, theme)', () => {
 		expect(manifest.options.layout).toBe('drawer')
 		expect(manifest.options.styling).toBe('tailwind')
 		expect(manifest.options.theme).toBe('hacker')
+	})
+})
+
+describe('feature template overlays (with-ai / with-localai)', () => {
+	it('scaffolds with-ai chat overlay and merges @opencode/client', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'AI App',
+			appId: 'io.x.ai',
+			nameKebab: 'ai-app',
+			templateId: 'with-ai',
+			templateVariant: 'default',
+			feature: 'ai',
+		})
+		expect(existsSync(join(target, 'src', 'pages', 'ChatPage.tsx'))).toBe(true)
+		expect(existsSync(join(target, 'src', 'lib', 'ai', 'client.ts'))).toBe(true)
+		expect(existsSync(join(target, 'AI.md'))).toBe(true)
+		expect(existsSync(join(target, '.env.example'))).toBe(true)
+		const nav = readFileSync(join(target, 'src', 'nav.ts'), 'utf8')
+		expect(nav).toContain('/chat')
+		expect(nav).toContain('ChatPage')
+		const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+		expect(pkg.dependencies['@opencode/client']).toBeTruthy()
+		const {options} = JSON.parse(
+			readFileSync(join(target, MANIFEST_NAME), 'utf8'),
+		) as {options: Record<string, unknown>}
+		expect(options.template).toBe('with-ai')
+	})
+
+	it('scaffolds with-localai overlay and merges llama-cpp-capacitor + web-llm', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Local AI',
+			appId: 'io.x.localai',
+			nameKebab: 'local-ai',
+			templateId: 'with-localai',
+			templateVariant: 'default',
+			feature: 'localai',
+		})
+		expect(existsSync(join(target, 'src', 'pages', 'LocalChatPage.tsx'))).toBe(
+			true,
+		)
+		expect(existsSync(join(target, 'LOCALAI.md'))).toBe(true)
+		const nav = readFileSync(join(target, 'src', 'nav.ts'), 'utf8')
+		expect(nav).toContain('/local-chat')
+		const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+		expect(pkg.dependencies['llama-cpp-capacitor']).toBeTruthy()
+		expect(pkg.dependencies['@mlc-ai/web-llm']).toBeTruthy()
+		const client = readFileSync(
+			join(target, 'src', 'lib', 'localai', 'client.ts'),
+			'utf8',
+		)
+		expect(client).toContain('@mlc-ai/web-llm')
+		expect(client).toContain('window.localAi')
+		const {options} = JSON.parse(
+			readFileSync(join(target, MANIFEST_NAME), 'utf8'),
+		) as {options: Record<string, unknown>}
+		expect(options.template).toBe('with-localai')
+	})
+
+	it('scaffolds with-vue Ionic Vue base', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Vue App',
+			appId: 'io.x.vue',
+			nameKebab: 'vue-app',
+			templateId: 'with-vue',
+			templateVariant: 'vue',
+		})
+		expect(existsSync(join(target, 'src', 'App.vue'))).toBe(true)
+		expect(existsSync(join(target, 'src', 'main.ts'))).toBe(true)
+		expect(existsSync(join(target, 'src', 'router', 'index.ts'))).toBe(true)
+		expect(existsSync(join(target, 'src', 'views', 'DashboardPage.vue'))).toBe(
+			true,
+		)
+		const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+		expect(pkg.dependencies['@ionic/vue']).toBeTruthy()
+		expect(pkg.dependencies.vue).toBeTruthy()
+		expect(pkg.dependencies['@ionic/react']).toBeUndefined()
+		expect(pkg.dependencies['@capawesome/capacitor-electron']).toBe('^0.2.2')
+		const {options} = JSON.parse(
+			readFileSync(join(target, MANIFEST_NAME), 'utf8'),
+		) as {options: Record<string, unknown>}
+		expect(options.template).toBe('with-vue')
+	})
+
+	it('injects Electron localai preload IPC end-to-end', () => {
+		const target = makeTemp()
+		const electronDir = join(target, 'electron')
+		mkdirSync(electronDir, {recursive: true})
+		writeFileSync(
+			join(electronDir, 'main.ts'),
+			[
+				"import {createCapacitorElectronApp} from '@capawesome/capacitor-electron'",
+				"import config from './capacitor.electron.config'",
+				'createCapacitorElectronApp(config)',
+				'',
+			].join('\n'),
+		)
+		writeFileSync(
+			join(electronDir, 'capacitor.electron.config.ts'),
+			[
+				"import {defineConfig} from '@capawesome/capacitor-electron/config'",
+				'export default defineConfig({',
+				'  window: { width: 1200, height: 800 },',
+				'})',
+				'',
+			].join('\n'),
+		)
+		writeFileSync(
+			join(electronDir, 'package.json'),
+			JSON.stringify(
+				{name: 'demo-electron', private: true, version: '0.0.0'},
+				null,
+				2,
+			),
+		)
+		expect(ensureLocalAiElectronHook(target)).toBe(true)
+		expect(existsSync(join(electronDir, 'localai-sidecar.mjs'))).toBe(true)
+		expect(existsSync(join(electronDir, 'localai-preload.cjs'))).toBe(true)
+		expect(existsSync(join(electronDir, 'localai-ipc.mjs'))).toBe(true)
+		const main = readFileSync(join(electronDir, 'main.ts'), 'utf8')
+		expect(main).toContain('registerLocalAiIpc')
+		const cfg = readFileSync(
+			join(electronDir, 'capacitor.electron.config.ts'),
+			'utf8',
+		)
+		expect(cfg).toContain('localai-ipc')
+		const preload = readFileSync(
+			join(electronDir, 'localai-preload.cjs'),
+			'utf8',
+		)
+		expect(preload).toContain('localAi')
+		expect(preload).toContain('localai:chat')
+		const ePkg = JSON.parse(
+			readFileSync(join(electronDir, 'package.json'), 'utf8'),
+		)
+		expect(ePkg.dependencies['node-llama-cpp']).toBeTruthy()
+		// idempotent
+		expect(ensureLocalAiElectronHook(target)).toBe(true)
+	})
+
+	it('scaffolds blank/minimal base via templateVariant', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Blank',
+			appId: 'io.x.blank',
+			nameKebab: 'blank',
+			templateId: 'blank',
+			templateVariant: 'minimal',
+		})
+		const {options} = JSON.parse(
+			readFileSync(join(target, MANIFEST_NAME), 'utf8'),
+		) as {options: Record<string, unknown>}
+		expect(options.template).toBe('blank')
+		expect(existsSync(join(target, 'src', 'pages', 'ChatPage.tsx'))).toBe(false)
 	})
 })
 

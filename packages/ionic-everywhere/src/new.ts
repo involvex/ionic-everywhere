@@ -5,8 +5,19 @@ import {setupAgentsSkills} from './agents-skills'
 import {formatReport, runChecks} from './doctor'
 import {prunePlatformScripts} from './platform-scripts'
 import {runStreaming} from './run'
-import {applyWorkspaces, ensureElectronDevToolsHook, scaffold} from './scaffold'
+import {
+	applyWorkspaces,
+	ensureElectronDevToolsHook,
+	ensureLocalAiElectronHook,
+	scaffold,
+} from './scaffold'
 import {SCAFFOLD_LOG, step} from './step'
+import {
+	formatTemplateCatalog,
+	resolveTemplate,
+	templatePromptOptions,
+	type TemplateEntry,
+} from './templates-catalog'
 import {
 	deriveAppId,
 	detectPm,
@@ -52,7 +63,9 @@ interface ResolvedConfig {
 	electron: boolean
 	git: boolean
 	tests: boolean
+	templateId: string
 	templateVariant: string
+	feature?: string
 	layout: string
 	styling: string
 	theme: string
@@ -73,7 +86,8 @@ function die(msg: string): never {
 }
 
 export interface ValidationFinding {
-	field: 'pm' | 'appId' | 'appName' | 'layout' | 'styling' | 'theme'
+	field:
+		'pm' | 'appId' | 'appName' | 'layout' | 'styling' | 'theme' | 'template'
 	fatal: boolean
 	message: string
 }
@@ -81,7 +95,14 @@ export interface ValidationFinding {
 export function validateNewOptions(
 	opts: Pick<
 		NewOptions,
-		'appId' | 'appName' | 'pm' | 'layout' | 'styling' | 'theme' | 'yes'
+		| 'appId'
+		| 'appName'
+		| 'pm'
+		| 'layout'
+		| 'styling'
+		| 'theme'
+		| 'template'
+		| 'yes'
 	>,
 ): ValidationFinding[] {
 	const findings: ValidationFinding[] = []
@@ -90,6 +111,13 @@ export function validateNewOptions(
 			field: 'pm',
 			fatal: true,
 			message: `Unsupported --pm "${opts.pm}". Choose one of: ${VALID_PMS.join(', ')}`,
+		})
+	}
+	if (opts.template !== undefined && resolveTemplate(opts.template) === null) {
+		findings.push({
+			field: 'template',
+			fatal: true,
+			message: `Unknown --template "${opts.template}".\n${formatTemplateCatalog()}`,
 		})
 	}
 	if (
@@ -249,11 +277,18 @@ export async function resolveConfig(
 	let pm = opts.pm ?? ''
 	let git = opts.git
 	let tests = opts.tests
+	let templateChoice = opts.template ?? ''
 	let layout = opts.layout ?? ''
 	let styling = opts.styling ?? ''
 	let theme = opts.theme ?? ''
 
 	if (!opts.yes && interactive) {
+		if (!templateChoice) {
+			templateChoice = await prompts.select('Which template?', {
+				initialValue: 'tabs',
+				options: templatePromptOptions(),
+			})
+		}
 		if (!appName) {
 			const title = toTitle(kebabDefault)
 			appName =
@@ -343,6 +378,10 @@ export async function resolveConfig(
 		theme = 'light-dark'
 	if (git === undefined) git = opts.git
 
+	const resolved: TemplateEntry =
+		resolveTemplate(templateChoice || undefined) ??
+		(resolveTemplate('tabs') as TemplateEntry)
+
 	return {
 		targetDir,
 		dirName,
@@ -355,7 +394,9 @@ export async function resolveConfig(
 		electron: opts.electron,
 		git: git ?? true,
 		tests: tests ?? false,
-		templateVariant: opts.template === 'minimal' ? 'minimal' : 'default',
+		templateId: resolved.id,
+		templateVariant: resolved.base,
+		feature: resolved.feature,
 		layout,
 		styling,
 		theme,
@@ -408,12 +449,13 @@ export async function runNew(
 	}
 
 	p.intro(`ionic-everywhere - scaffolding ${cfg.nameKebab}`)
-	p.log.info(`Target : ${cfg.targetDir}`)
-	p.log.info(`App ID : ${cfg.appId}`)
-	p.log.info(`PM     : ${cfg.pm}`)
-	p.log.info(`Layout : ${cfg.layout}`)
-	p.log.info(`Styling: ${cfg.styling}`)
-	p.log.info(`Theme  : ${cfg.theme}`)
+	p.log.info(`Target  : ${cfg.targetDir}`)
+	p.log.info(`App ID  : ${cfg.appId}`)
+	p.log.info(`PM      : ${cfg.pm}`)
+	p.log.info(`Template: ${cfg.templateId}`)
+	p.log.info(`Layout  : ${cfg.layout}`)
+	p.log.info(`Styling : ${cfg.styling}`)
+	p.log.info(`Theme   : ${cfg.theme}`)
 	const targets = [
 		'web',
 		...(cfg.android ? ['android'] : []),
@@ -510,6 +552,9 @@ export async function runNew(
 		}
 		applyWorkspaces(join(cfg.targetDir, 'package.json'), true)
 		ensureElectronDevToolsHook(cfg.targetDir)
+		if (cfg.feature === 'localai') {
+			ensureLocalAiElectronHook(cfg.targetDir)
+		}
 		if (
 			!(await step(
 				s,

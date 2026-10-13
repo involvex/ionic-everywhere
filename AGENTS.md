@@ -14,8 +14,10 @@ Binaries: `ionic-everywhere` and `create-ionic-everywhere` (same entry point).
 packages/ionic-everywhere/   The CLI (TypeScript -> dist/, bins in package.json)
   src/                       cli.ts (entry/dispatch), new.ts (scaffold flow),
                              scaffold.ts (copy+tokens), doctor.ts (env checks), util.ts
-  templates/default/         The generated app template. Tokenized:
-                             __APP_NAME__, __APP_ID__, __APP_NAME_KEBAB__
+  templates/default/         Ionic React tabs template (tokenized __APP_*__)
+  templates/minimal/         Blank React base (`-t blank`)
+  templates/vue/             Ionic Vue sibling (`-t with-vue`)
+  templates/overlays/        Feature/layout/style/theme overlays
 reference-app/               Hand-verified playground app (Phase 1). NOTES.md holds
                              verified-stack findings and gotchas. NOT part of the package.
 tests/                       Vitest unit tests (import from packages/*/src directly)

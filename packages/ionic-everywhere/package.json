@@ -1,7 +1,7 @@
 {
 	"name": "@involvex/ionic-everywhere",
 	"version": "0.1.6",
-	"description": "Scaffold one responsive Ionic React codebase that builds Web, Android and Desktop apps.",
+	"description": "Scaffold one responsive Ionic React or Vue codebase that builds Web, Android and Desktop apps.",
 	"keywords": [
 		"ionic",
 		"capacitor",
@@ -9,7 +9,8 @@
 		"cross-platform",
 		"scaffolding",
 		"cli",
-		"react"
+		"react",
+		"vue"
 	],
 	"repository": {
 		"type": "git",
@@ -39,10 +40,10 @@
 		"typecheck": "tsc -p tsconfig.json --noEmit"
 	},
 	"dependencies": {
-		"@clack/prompts": "^1.7.0"
+		"@clack/prompts": "^1.8.1"
 	},
 	"devDependencies": {
-		"@types/node": "^26.3.0",
+		"@types/node": "^26.6.5",
 		"typescript": "^5.9.3"
 	},
 	"engines": {

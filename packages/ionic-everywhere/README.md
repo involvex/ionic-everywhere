@@ -20,6 +20,9 @@ from the same source tree.
 
 ```bash
 bunx @involvex/ionic-everywhere new my-app
+bunx create-ionic-everywhere my-app -t with-ai
+bunx create-ionic-everywhere my-app -t with-vue
+bunx create-ionic-everywhere my-app -t with-localai
 cd my-app
 
 bun run dev            # web dev server (hot reload)
@@ -27,6 +30,9 @@ bun run sync           # production build + sync both native shells
 bun run build:desktop  # Windows / macOS / Linux app
 bun run build:android  # debug APK
 ```
+
+Named templates (`-t` / `--template`): `tabs` (default), `blank`, `with-vue`,
+`with-ai`, `with-localai`. Run `ionic-everywhere templates` for descriptions.
 
 The generated app is **adaptive by design**: a bottom tab bar on narrow screens becomes a
 persistent sidebar on wide screens (`IonSplitPane`, breakpoint `lg`). Menu entries and tabs
@@ -37,12 +43,13 @@ navigate identical routes, so the same navigation model feels native everywhere.
 | Command          | What it does                                  |
 | ---------------- | --------------------------------------------- |
 | `new <name>`     | Scaffold a new project                        |
+| `templates`      | List Expo-style named templates (`-t`)        |
 | `add <platform>` | Add Android or Desktop to an existing project |
 | `doctor`         | Check environment and prerequisites           |
-| `build`          | Build the CLI                                 |
-| `list`           | List available templates and overlays         |
-| `upgrade`        | Interactive upgrade helper                    |
-| `sign`           | Signing / identity helper (macOS / Windows)   |
+| `build`          | Build platforms in a generated project        |
+| `list`           | Show generator info for the nearest project   |
+| `upgrade`        | Bring tooling up to the current template      |
+| `sign`           | Build and sign an Android release APK         |
 
 ## Generated project scripts
 

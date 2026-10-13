@@ -5,6 +5,7 @@
 | Command                   | Purpose                                              |
 | ------------------------- | ---------------------------------------------------- |
 | [`new`](/cli/new)         | Scaffold a new project                               |
+| `templates`               | List named templates (`-t tabs\|blank\|with-vue\|…`) |
 | [`build`](/cli/build)     | Run project build scripts                            |
 | [`add`](/cli/add)         | Add `android` or `desktop` to an existing project    |
 | [`upgrade`](/cli/upgrade) | Bring a project's tooling up to the current template |

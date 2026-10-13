@@ -20,15 +20,15 @@ const TEMPLATE_PKG_PATH = join(
  * drift-guard enforces this on every test run.
  */
 export const BLESSED_DEPS: Record<string, string> = {
-	'@capacitor/core': '^8.5.1',
-	'@capacitor/cli': '^8.5.1',
-	'@capacitor/android': '^8.5.1',
+	'@capacitor/core': '^8.5.3',
+	'@capacitor/cli': '^8.5.3',
+	'@capacitor/android': '^8.5.3',
 	'@capacitor/preferences': '^8.0.1',
-	'@capawesome/capacitor-electron': '^0.1.1',
-	'@ionic/react': '^9.0.3',
-	'@ionic/react-router': '^9.0.3',
-	'react-router': '^7.18.3',
-	'react-router-dom': '^7.18.3',
+	'@capawesome/capacitor-electron': '^0.2.2',
+	'@ionic/react': '^9.0.7',
+	'@ionic/react-router': '^9.0.7',
+	'react-router': '^7.18.4',
+	'react-router-dom': '^7.18.4',
 	'vite-plugin-pwa': '^1.3.0',
 	'workbox-window': '^7.4.1',
 	typescript: '^5.9.3',

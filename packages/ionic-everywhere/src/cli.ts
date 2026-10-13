@@ -11,6 +11,7 @@ import {allRequiredOk, formatReport, runChecks} from './doctor'
 import {runList, type ListOptions} from './list'
 import {runNew, type NewOptions} from './new'
 import {runSign, type SignOptions} from './sign'
+import {formatTemplateCatalog} from './templates-catalog'
 import {runUpgrade, type UpgradeOptions} from './upgrade'
 import {parseFlags} from './util'
 
@@ -22,7 +23,7 @@ const VERSION = JSON.parse(
 ).version as string
 
 const HELP = `
-ionic-everywhere v${VERSION} - one responsive Ionic React codebase, web + Android + desktop
+ionic-everywhere v${VERSION} - one responsive Ionic React/Vue codebase, web + Android + desktop
 
 Usage:
   ionic-everywhere new [dir] [options]   Scaffold a new project
@@ -33,20 +34,21 @@ Usage:
   ionic-everywhere doctor                Check the environment
   ionic-everywhere list                  Show generator info for the nearest
                                          ionic-everywhere project
-    ionic-everywhere upgrade               Bring an existing project's tooling
-                                            up to the current template (scripts,
-                                            new template files, manifest)
-     ionic-everywhere upgrade --pm <pm>       Override the package manager for the
-                                             upgrade (defaults to manifest or disk)
-     ionic-everywhere upgrade --check-deps  Report dependency drift vs the blessed
-                                             registry (safe, non-interactive)
-     ionic-everywhere upgrade --deps        Apply safe patch/minor dependency bumps
-                                             (Phase 2; currently report-only)
-     ionic-everywhere upgrade --allow-dirty Apply even with uncommitted git changes
-   ionic-everywhere build                 Run project build scripts (defaults to build:all)
-   ionic-everywhere sign                  Build and sign a release APK for Android
-   ionic-everywhere completions <shell>   Generate shell tab completions
-                                           (powershell, bash, zsh, fish)
+  ionic-everywhere templates             List Expo-style named templates (-t)
+  ionic-everywhere upgrade               Bring an existing project's tooling
+                                         up to the current template (scripts,
+                                         new template files, manifest)
+  ionic-everywhere upgrade --pm <pm>     Override the package manager for the
+                                         upgrade (defaults to manifest or disk)
+  ionic-everywhere upgrade --check-deps  Report dependency drift vs the blessed
+                                         registry (safe, non-interactive)
+  ionic-everywhere upgrade --deps        Apply safe patch/minor dependency bumps
+                                         (Phase 2; currently report-only)
+  ionic-everywhere upgrade --allow-dirty Apply even with uncommitted git changes
+  ionic-everywhere build                 Run project build scripts (defaults to build:all)
+  ionic-everywhere sign                  Build and sign a release APK for Android
+  ionic-everywhere completions <shell>   Generate shell tab completions
+                                         (powershell, bash, zsh, fish)
 
 Options:
   --name <name>       Display name of the app (no & < > " ' \\, line breaks or
@@ -55,34 +57,37 @@ Options:
   --app-id <id>       Reverse-DNS application id (e.g. com.example.myapp)
   --pm <bun|npm|pnpm|yarn>
                       Package manager for the generated project
-   --dir <path>        (add, list, upgrade, build) Project directory (defaults to cwd)
-   --platform <target> (build) Target platform to build (all, android, desktop, web)
-   -p <target>         Alias for --platform
+  -t, --template <id> Named template: tabs, blank, with-vue, with-ai,
+                      with-localai (aliases: default, minimal, vue, ai,
+                      localai)
+  --dir <path>        (add, list, upgrade, build) Project directory (defaults to cwd)
+  --platform <target> (build) Target platform to build (all, android, desktop, web)
+  -p <target>         Alias for --platform
   --json              (doctor) Print a machine-readable JSON report and exit
                       non-zero when required checks fail; (list) print the raw
                       generator manifest
-   --dry-run           (upgrade) Print the plan without changing anything
-   --force             (upgrade) Re-apply even when versions already match
-   --check-deps        (upgrade) Report dependency drift vs blessed registry
-   --deps              (upgrade) Apply safe patch/minor dependency bumps
-   --allow-dirty       (upgrade) Allow uncommitted git changes
+  --dry-run           (upgrade) Print the plan without changing anything
+  --force             (upgrade) Re-apply even when versions already match
+  --check-deps        (upgrade) Report dependency drift vs blessed registry
+  --deps              (upgrade) Apply safe patch/minor dependency bumps
+  --allow-dirty       (upgrade) Allow uncommitted git changes
   --no-android        Skip adding the Android platform
   --no-electron       Skip adding the desktop (Electron) platform
   --no-install        Skip dependency install and platform generation
   --no-git            Skip git init
-   --tests             (new) Add a Vitest testing scaffold to the generated app
-                       (interactive default: yes; --yes default: no)
-   --layout <tabs|drawer|sidebar>
-                       Navigation layout style (default: tabs)
-   --styling <ionic-css|tailwind|shadcn|kumo>
-                       Styling engine / framework (default: ionic-css)
-   --theme <light-dark|hacker|monokai>
-                       Color theme (default: light-dark)
-   --keystore <path>   (sign) Path to the release keystore file (.jks or .keystore)
-   --store-pass <pass> (sign) Password for the keystore
-   --key-alias <alias> (sign) Alias for the private key
-   --key-pass <pass>   (sign) Password for the private key (defaults to store-pass)
-   --keep-on-failure   (new) Keep a partially created project when a setup
+  --tests             (new) Add a Vitest testing scaffold to the generated app
+                      (interactive default: yes; --yes default: no)
+  --layout <tabs|drawer|sidebar>
+                      Navigation layout style (default: tabs)
+  --styling <ionic-css|tailwind|shadcn|kumo>
+                      Styling engine / framework (default: ionic-css)
+  --theme <light-dark|hacker|monokai>
+                      Color theme (default: light-dark)
+  --keystore <path>   (sign) Path to the release keystore file (.jks or .keystore)
+  --store-pass <pass> (sign) Password for the keystore
+  --key-alias <alias> (sign) Alias for the private key
+  --key-pass <pass>   (sign) Password for the private key (defaults to store-pass)
+  --keep-on-failure   (new) Keep a partially created project when a setup
                       step fails instead of offering to remove it
   --yes               Accept defaults, no prompts
   -h, --help          Show this help
@@ -90,7 +95,9 @@ Options:
 
 Examples:
   bunx @involvex/ionic-everywhere new my-app
-  ionic-everywhere new my-app --yes
+  bunx create-ionic-everywhere my-app -t with-ai
+  ionic-everywhere new my-app -t with-vue --yes
+  ionic-everywhere new my-app --template blank --yes
   ionic-everywhere new my-app --no-electron   # web + Android only
   cd my-app && ionic-everywhere add desktop   # add Electron later
 `
@@ -176,6 +183,10 @@ async function main(): Promise<number> {
 				json: flags.json === true,
 			}
 			return runList(opts)
+		}
+		case 'templates': {
+			console.log(formatTemplateCatalog())
+			return 0
 		}
 		case 'upgrade': {
 			if (positionals.length > 0) {

@@ -22,12 +22,13 @@ function powershellCompletions(): string {
 Register-ArgumentCompleter -Native -CommandName 'ionic-everywhere', 'create-ionic-everywhere', 'ine' -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
 
-    $commands = @('new', 'add', 'doctor', 'list', 'upgrade', 'completions')
+    $commands = @('new', 'add', 'doctor', 'list', 'templates', 'upgrade', 'completions', 'build', 'sign')
     $platforms = @('android', 'desktop', 'electron')
     $pms = @('bun', 'npm', 'pnpm', 'yarn')
+    $templates = @('tabs', 'blank', 'with-vue', 'with-ai', 'with-localai', 'default', 'minimal', 'vue', 'ai', 'localai')
     $shells = @('powershell', 'bash', 'zsh', 'fish')
     $globalFlags = @('--help', '--version')
-    $newFlags = @('--name', '--app-id', '--pm', '--dir', '--template', '--yes', '--no-android', '--no-electron', '--no-install', '--no-git', '--tests', '--keep-on-failure')
+    $newFlags = @('--name', '--app-id', '--pm', '--dir', '-t', '--template', '--yes', '--no-android', '--no-electron', '--no-install', '--no-git', '--tests', '--layout', '--styling', '--theme', '--keep-on-failure')
     $addFlags = @('--dir', '--pm', '--install', '--yes', '--help')
     $listFlags = @('--dir', '--json', '--help')
     $upgradeFlags = @('--dir', '--pm', '--dry-run', '--force', '--yes', '--help')
@@ -65,11 +66,17 @@ Register-ArgumentCompleter -Native -CommandName 'ionic-everywhere', 'create-ioni
                     break
                 }
             }
-            if ($hasPm -and ($elements[$astCount - 1].ToString() -eq '--pm')) {
+            $last = $elements[$astCount - 1].ToString()
+            if ($hasPm -and $last -eq '--pm') {
                 $suggestions = $pms
+            } elseif ($last -eq '--template' -or $last -eq '-t') {
+                $suggestions = $templates
             } else {
                 $suggestions = $newFlags
             }
+        }
+        'templates' {
+            $suggestions = $globalFlags
         }
         'completions' {
             if ($astCount -eq 2) {
@@ -103,11 +110,12 @@ _ionic_everywhere_completions() {
     local cur prev words cword
     _init_completion || return
 
-    local commands="new add doctor list upgrade completions"
+    local commands="new add doctor list templates upgrade completions build sign"
     local platforms="android desktop electron"
     local pms="bun npm pnpm yarn"
+    local templates="tabs blank with-vue with-ai with-localai default minimal vue ai localai"
     local shells="powershell bash zsh fish"
-    local new_flags="--name --app-id --pm --dir --template --yes --no-android --no-electron --no-install --no-git --tests --keep-on-failure --help --version"
+    local new_flags="--name --app-id --pm --dir -t --template --yes --no-android --no-electron --no-install --no-git --tests --layout --styling --theme --keep-on-failure --help --version"
     local add_flags="--dir --pm --install --yes --help"
     local list_flags="--dir --json --help"
     local upgrade_flags="--dir --pm --dry-run --force --yes --help"
@@ -130,6 +138,8 @@ _ionic_everywhere_completions() {
         new)
             if [ "$prev" = "--pm" ]; then
                 COMPREPLY=( $(compgen -W "$pms" -- "$cur") )
+            elif [ "$prev" = "--template" ] || [ "$prev" = "-t" ]; then
+                COMPREPLY=( $(compgen -W "$templates" -- "$cur") )
             else
                 COMPREPLY=( $(compgen -W "$new_flags" -- "$cur") )
             fi
@@ -142,6 +152,9 @@ _ionic_everywhere_completions() {
         list)
             COMPREPLY=( $(compgen -W "$list_flags" -- "$cur") )
             ;;
+        templates)
+            COMPREPLY=( $(compgen -W "--help --version" -- "$cur") )
+            ;;
         upgrade)
             COMPREPLY=( $(compgen -W "$upgrade_flags" -- "$cur") )
             ;;
@@ -151,7 +164,7 @@ _ionic_everywhere_completions() {
         *)
             COMPREPLY=( $(compgen -W "$new_flags" -- "$cur") )
             ;;
-    es}
+    esac
 }
 
 complete -F _ionic_everywhere_completions ionic-everywhere create-ionic-everywhere ine
@@ -169,8 +182,11 @@ _ionic_everywhere() {
     'add:Add a platform to an existing project'
     'doctor:Check the environment'
     'list:Show generator info for the project'
+    'templates:List named templates'
     'upgrade:Upgrade project tooling'
     'completions:Generate shell completions'
+    'build:Build platforms'
+    'sign:Sign Android release APK'
   )
 
   if (( CURRENT == 2 )); then
@@ -195,15 +211,21 @@ _ionic_everywhere() {
         '--app-id[Application ID]:id:' \\
         '--pm[Package manager]:pm:(bun npm pnpm yarn)' \\
         '--dir[Project directory]:directory:_files -/' \\
-        '--template[Template name]:template:' \\
+        '(-t --template)'{-t,--template}'[Named template]:template:(tabs blank with-vue with-ai with-localai default minimal vue ai localai)' \\
         '--yes[Accept defaults]' \\
         '--no-android[Skip android]' \\
         '--no-electron[Skip electron]' \\
         '--no-install[Skip install]' \\
         '--no-git[Skip git]' \\
         '--tests[Add tests]' \\
+        '--layout[Navigation layout]:layout:(tabs drawer sidebar)' \\
+        '--styling[Styling engine]:styling:(ionic-css tailwind shadcn kumo)' \\
+        '--theme[Color theme]:theme:(light-dark hacker monokai)' \\
         '--keep-on-failure[Keep on failure]' \\
         '--help[Show help]'
+      ;;
+    templates)
+      _arguments '--help[Show help]'
       ;;
     *)
       _arguments \\
@@ -233,9 +255,11 @@ complete -c ionic-everywhere -f
 complete -c create-ionic-everywhere -f
 complete -c ine -f
 
-complete -c ionic-everywhere -n "not __ionic_everywhere_using_subcommand new; and not __ionic_everywhere_using_subcommand add; and not __ionic_everywhere_using_subcommand doctor; and not __ionic_everywhere_using_subcommand list; and not __ionic_everywhere_using_subcommand upgrade; and not __ionic_everywhere_using_subcommand completions" -a "new add doctor list upgrade completions"
+complete -c ionic-everywhere -n "not __ionic_everywhere_using_subcommand new; and not __ionic_everywhere_using_subcommand add; and not __ionic_everywhere_using_subcommand doctor; and not __ionic_everywhere_using_subcommand list; and not __ionic_everywhere_using_subcommand templates; and not __ionic_everywhere_using_subcommand upgrade; and not __ionic_everywhere_using_subcommand completions" -a "new add doctor list templates upgrade completions build sign"
 
 complete -c ionic-everywhere -n "__ionic_everywhere_using_subcommand add" -a "android desktop electron"
 complete -c ionic-everywhere -n "__ionic_everywhere_using_subcommand completions" -a "powershell bash zsh fish"
+complete -c ionic-everywhere -n "__ionic_everywhere_using_subcommand new" -l template -a "tabs blank with-vue with-ai with-localai default minimal vue ai localai"
+complete -c ionic-everywhere -n "__ionic_everywhere_using_subcommand new" -s t -a "tabs blank with-vue with-ai with-localai default minimal vue ai localai"
 `.trim()
 }

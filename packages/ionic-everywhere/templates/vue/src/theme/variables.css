@@ -1,0 +1,19 @@
+:root {
+}
+
+@media (min-width: 992px) {
+	ion-tab-bar {
+		display: none;
+	}
+	/*
+	 * Tabs live inside the split-pane main area. Keep the page flexed so
+	 * the side menu is not covered on large screens.
+	 */
+	ion-split-pane.split-pane-visible > .ion-page,
+	ion-split-pane.split-pane-visible > ion-router-outlet {
+		position: relative;
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+	}
+}

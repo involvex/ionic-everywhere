@@ -23,6 +23,9 @@ from the same source tree.
 ```bash
 # once published:
 bunx @involvex/ionic-everywhere new my-app
+bunx create-ionic-everywhere my-app -t with-ai   # OpenCode / OpenAI-compatible chat
+bunx create-ionic-everywhere my-app -t with-vue  # Ionic Vue sibling
+bunx create-ionic-everywhere my-app -t with-localai  # on-device llama.cpp
 cd my-app
 
 bun run dev            # web dev server (hot reload)
@@ -30,6 +33,9 @@ bun run sync           # production build + sync both native shells
 bun run build:desktop  # Windows / macOS / Linux app
 bun run build:android  # debug APK
 ```
+
+Named templates (`-t` / `--template`): `tabs` (default), `blank`, `with-vue`, `with-ai`, `with-localai`.
+Run `ionic-everywhere templates` for descriptions.
 
 The generated app is **adaptive by design**: a bottom tab bar on narrow screens becomes a
 persistent sidebar on wide screens (`IonSplitPane`, breakpoint `lg`). Menu entries and tabs
@@ -113,7 +119,8 @@ See [AGENTS.md](AGENTS.md) for contribution conventions and known pitfalls.
 - [x] `ionic-everywhere add <android|desktop>` for existing projects
 - [x] Working settings persistence (preferences + dark mode) in the template
 - [x] Opt-in Vitest testing scaffold (`--tests`)
-- [ ] Optional templates: drawer-only, tabs-only
+- [x] Named templates (`-t tabs|blank|with-vue|with-ai|with-localai`)
+- [x] Ionic Vue sibling template (`-t with-vue`)
 - [x] GitHub Actions CI (verify/build/scaffold smoke) + manual artifacts build
 
 ## License

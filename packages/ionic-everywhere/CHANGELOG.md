@@ -1,3 +1,26 @@
+## Unreleased
+
+### Added
+
+- Expo-style named templates via `-t` / `--template`: `tabs`, `blank`,
+  `with-vue`, `with-ai`, `with-localai` (aliases: `default`, `minimal`, `vue`,
+  `ai`, `localai`).
+- `ionic-everywhere templates` lists the catalog.
+- Ionic Vue sibling template (`-t with-vue`): Vue 3.5 + `@ionic/vue` /
+  `@ionic/vue-router`.
+- `with-ai` overlay: Chat page, OpenCode HTTP / OpenAI-compatible backends,
+  Settings fields, `.env.example`, `AI.md`.
+- `with-localai` overlay: Local Chat page, `llama-cpp-capacitor` (Android),
+  Electron preload IPC (`window.localAi.chat` + `node-llama-cpp`), WebLLM
+  (`@mlc-ai/web-llm`) for browser, `LOCALAI.md`.
+
+### Changed
+
+- Safe dependency bumps (Capacitor 8.5.3, Ionic React 9.0.7, React 19.3,
+  Vite 8.3.4, `@capawesome/capacitor-electron` 0.2.2, tooling patch/minors).
+  Held: TypeScript 7, Vitest 5, `vite-plugin-pwa` 2, React Router 8,
+  Electron 44.
+
 ## [0.1.6] - 2026-09-15
 
 - Patch release with publishing pipeline improvements.

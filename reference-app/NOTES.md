@@ -1,6 +1,6 @@
 # Phase 1 Findings — reference-app verification (2026-08-25)
 
-Verified stack: Ionic React **9.0.2** · React **19.2** · Vite **8.2** · TypeScript **5.9** · Capacitor **8.5.1** · `@capawesome/capacitor-electron` **0.1.1** (Electron **43.4**)
+Verified stack: Ionic React **9.0.7** · React **19.3** · Vite **8.3** · TypeScript **5.9** · Capacitor **8.5.3** · `@capawesome/capacitor-electron` **0.2.2** (Electron **43**; `tsc` clean on app + `electron/`). Note: 0.2.x makes `BundleService` stateless (Live Update owns persistence); set `productName` on `electron/package.json` when upgrading so `userData` stays stable.
 
 ## Verification results
 

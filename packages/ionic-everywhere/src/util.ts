@@ -166,6 +166,7 @@ export function parseFlags(argv: string[]): {
 				y: 'yes',
 				h: 'help',
 				v: 'version',
+				t: 'template',
 			}
 			const key = aliasMap[arg.slice(1)] ?? arg.slice(1)
 			flags[key] =

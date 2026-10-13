@@ -49,12 +49,10 @@ function fakePrompts(
 	confirms: string[] = [],
 ): PromptAdapter {
 	return {
-		text: async message => {
-			throw new Error(`unexpected text prompt: ${message}`)
-		},
-		select: async message => {
-			throw new Error(`unexpected select prompt: ${message}`)
-		},
+		text: async (_message, opts) =>
+			opts?.initialValue ?? opts?.placeholder ?? '',
+		select: async (_message, opts) =>
+			opts.initialValue ?? opts.options[0]?.value ?? '',
 		confirm: async message => {
 			confirms.push(message)
 			return confirmResult

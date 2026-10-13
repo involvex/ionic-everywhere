@@ -75,6 +75,10 @@ export function formatProjectReport(
 		'android',
 		'electron',
 		'tests',
+		'template',
+		'layout',
+		'styling',
+		'theme',
 	]) {
 		if (key in opts) lines.push(`${key.padEnd(17)}: ${String(opts[key])}`)
 	}

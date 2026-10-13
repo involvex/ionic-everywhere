@@ -27,35 +27,35 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@capacitor/android": "^8.5.1",
-		"@capacitor/core": "^8.5.1",
+		"@capacitor/android": "^8.5.3",
+		"@capacitor/core": "^8.5.3",
 		"@capacitor/preferences": "^8.0.1",
-		"@capawesome/capacitor-electron": "^0.1.1",
-		"@ionic/react": "^9.0.3",
-		"@ionic/react-router": "^9.0.3",
+		"@capawesome/capacitor-electron": "^0.2.2",
+		"@ionic/react": "^9.0.7",
+		"@ionic/react-router": "^9.0.7",
 		"ionicons": "^8.1.0",
-		"react": "^19.2.8",
-		"react-dom": "^19.2.8",
-		"react-router": "^7.18.3",
-		"react-router-dom": "^7.18.3"
+		"react": "^19.3.0",
+		"react-dom": "^19.3.0",
+		"react-router": "^7.18.4",
+		"react-router-dom": "^7.18.4"
 	},
 	"overrides": {
 		"@ionic/react-router": {
-			"react-router": ">=7.18.3"
+			"react-router": ">=7.18.4"
 		}
 	},
 	"devDependencies": {
-		"@capacitor/cli": "^8.5.1",
+		"@capacitor/cli": "^8.5.3",
 		"@eslint/js": "^10.0.1",
-		"@types/react": "^19.2.18",
-		"@types/react-dom": "^19.2.5",
-		"@vitejs/plugin-react": "^6.1.0",
-		"eslint": "^10.0.0",
-		"globals": "^17.11.0",
-		"prettier": "^3.8.2",
+		"@types/react": "^19.3.0",
+		"@types/react-dom": "^19.3.0",
+		"@vitejs/plugin-react": "^6.1.2",
+		"eslint": "^10.12.0",
+		"globals": "^17.13.0",
+		"prettier": "^3.9.10",
 		"typescript": "^5.9.3",
-		"typescript-eslint": "^8.68.0",
-		"vite": "^8.2.2",
+		"typescript-eslint": "^8.71.2",
+		"vite": "^8.3.4",
 		"vite-plugin-pwa": "^1.3.0",
 		"workbox-window": "^7.4.1"
 	}
