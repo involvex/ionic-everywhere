@@ -1,0 +1,7 @@
+:root {
+}
+
+/* Always-on sidebar: hide the mobile tab bar. */
+ion-tab-bar {
+	display: none;
+}

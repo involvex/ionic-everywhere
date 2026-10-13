@@ -4,12 +4,12 @@ Verified stack: Ionic React **9.0.7** · React **19.3** · Vite **8.3** · TypeS
 
 ## Verification results
 
-| Target        | Result | Artifact                                                                                |
-| ------------- | ------ | --------------------------------------------------------------------------------------- |
-| Web dev/build | ✅     | `dist/` (relative paths via `base: './'`), build ~0.5s                                  |
-| Android       | ✅     | `android/app/build/outputs/apk/debug/app-debug.apk` (4.3 MB debug)                      |
-| Desktop       | ✅     | `electron/dist/win-unpacked/Ionic Everywhere Reference.exe`                             |
-| One-shot sync | ✅     | `bun run sync` = build + `cap sync android` + `cap sync @capawesome/capacitor-electron` |
+| Target        | Result | Artifact                                                                                                                                              |
+| ------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web dev/build | ✅     | `dist/` (relative paths via `base: './'`), build ~0.5s                                                                                                |
+| Android       | ✅     | `android/app/build/outputs/apk/debug/app-debug.apk` (4.3 MB debug)                                                                                    |
+| Desktop       | ✅     | Capawesome **0.2.2** re-pack: `electron/dist/win-unpacked/Ionic Everywhere Reference.exe` + `Ionic Everywhere Reference Setup 0.0.0.exe` (2026-10-13) |
+| One-shot sync | ✅     | `bun run sync` = build + `cap sync android` + `cap sync @capawesome/capacitor-electron`                                                               |
 
 ## Gotchas discovered (must inform CLI design)
 

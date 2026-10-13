@@ -13,6 +13,10 @@
 - `with-localai` overlay: Local Chat page, `llama-cpp-capacitor` (Android),
   Electron preload IPC (`window.localAi.chat` + `node-llama-cpp`), WebLLM
   (`@mlc-ai/web-llm`) for browser, `LOCALAI.md`.
+- Vue `--layout drawer|sidebar` and `--styling` overlays; Vue `--tests` uses
+  `@vue/test-utils` instead of Testing Library.
+- CI `localai-smoke`: tiny GGUF via `node-llama-cpp`; WebGPU/WebLLM skips on
+  runners without a GPU.
 
 ### Changed
 

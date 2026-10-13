@@ -66,6 +66,12 @@ const TEST_DEV_DEPS: Record<string, string> = {
 	'@testing-library/dom': '^10.4.1',
 }
 
+const TEST_DEV_DEPS_VUE: Record<string, string> = {
+	vitest: '^4.1.11',
+	jsdom: '^30.0.1',
+	'@vue/test-utils': '^2.4.6',
+}
+
 const TEST_SCRIPTS: Record<string, string> = {
 	test: 'vitest run',
 	'test:watch': 'vitest',
@@ -211,10 +217,18 @@ export function applyTestingScaffold(
 		join(staging, 'vitest.config.ts'),
 		join(targetDir, 'vitest.config.ts'),
 	)
-	renameSync(
-		join(staging, 'App.test.tsx'),
-		join(targetDir, 'src', 'App.test.tsx'),
-	)
+	const vueTest = existsSync(join(staging, 'App.test.ts'))
+	if (vueTest) {
+		renameSync(
+			join(staging, 'App.test.ts'),
+			join(targetDir, 'src', 'App.test.ts'),
+		)
+	} else {
+		renameSync(
+			join(staging, 'App.test.tsx'),
+			join(targetDir, 'src', 'App.test.tsx'),
+		)
+	}
 	rmSync(staging, {recursive: true, force: true})
 
 	const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
@@ -223,7 +237,7 @@ export function applyTestingScaffold(
 	}
 	pkg.devDependencies = {
 		...(pkg.devDependencies ?? {}),
-		...TEST_DEV_DEPS,
+		...(vueTest ? TEST_DEV_DEPS_VUE : TEST_DEV_DEPS),
 	}
 	pkg.scripts = applyRunner({...TEST_SCRIPTS, ...(pkg.scripts ?? {})}, pm)
 	writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
@@ -246,14 +260,13 @@ export function overlayDir(type: string, name: string): string {
 
 export function applyOverlays(targetDir: string, opts: ScaffoldOptions): void {
 	const isVue = opts.templateVariant === 'vue'
-	// Layout/style/feature overlays are React-authored; skip on Vue base.
-	if (!isVue && opts.layout && opts.layout !== 'tabs') {
-		const src = overlayDir('layout', opts.layout)
+	if (opts.layout && opts.layout !== 'tabs') {
+		const src = overlayDir('layout', isVue ? `${opts.layout}-vue` : opts.layout)
 		if (existsSync(src)) {
 			cpSync(src, targetDir, {recursive: true, force: true})
 		}
 	}
-	if (!isVue && opts.styling && opts.styling !== 'ionic-css') {
+	if (opts.styling && opts.styling !== 'ionic-css') {
 		const src = overlayDir('style', opts.styling)
 		if (existsSync(src)) {
 			cpSync(src, targetDir, {recursive: true, force: true})

@@ -424,6 +424,29 @@ describe('testing scaffold (FEAT-012)', () => {
 		expect(pkg.scripts['test:watch']).toBe('vitest')
 	})
 
+	it('vue --tests: uses @vue/test-utils instead of RTL', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Vue Tested',
+			appId: 'io.x.vue.tested',
+			nameKebab: 'vue-tested',
+			templateId: 'with-vue',
+			templateVariant: 'vue',
+			tests: true,
+		})
+		expect(existsSync(join(target, 'vitest.config.ts'))).toBe(true)
+		expect(existsSync(join(target, 'src', 'App.test.ts'))).toBe(true)
+		expect(existsSync(join(target, 'src', 'App.test.tsx'))).toBe(false)
+		expect(existsSync(join(target, 'testing'))).toBe(false)
+		const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+		expect(pkg.devDependencies['@vue/test-utils']).toBeTruthy()
+		expect(pkg.devDependencies['@testing-library/react']).toBeUndefined()
+		expect(pkg.scripts.test).toBe('vitest run')
+		const vitestCfg = readFileSync(join(target, 'vitest.config.ts'), 'utf8')
+		expect(vitestCfg).toContain('@vitejs/plugin-vue')
+	})
+
 	it('disabled (default): leaves no testing artifacts behind', () => {
 		const target = makeTemp()
 		scaffold({
@@ -788,6 +811,48 @@ describe('feature template overlays (with-ai / with-localai)', () => {
 			readFileSync(join(target, MANIFEST_NAME), 'utf8'),
 		) as {options: Record<string, unknown>}
 		expect(options.template).toBe('with-vue')
+	})
+
+	it('applies Vue drawer layout and tailwind styling overlays', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Vue Drawer',
+			appId: 'io.x.vue.drawer',
+			nameKebab: 'vue-drawer',
+			templateId: 'with-vue',
+			templateVariant: 'vue',
+			layout: 'drawer',
+			styling: 'tailwind',
+		})
+		const app = readFileSync(join(target, 'src', 'App.vue'), 'utf8')
+		expect(app).not.toContain('ion-split-pane')
+		expect(app).toContain('AppMenu')
+		const router = readFileSync(
+			join(target, 'src', 'router', 'index.ts'),
+			'utf8',
+		)
+		expect(router).not.toContain('TabsPage')
+		expect(existsSync(join(target, 'tailwind.config.ts'))).toBe(true)
+		const tw = readFileSync(join(target, 'tailwind.config.ts'), 'utf8')
+		expect(tw).toContain('tsx,vue')
+		const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+		expect(pkg.devDependencies.tailwindcss).toBeDefined()
+	})
+
+	it('applies Vue sidebar layout overlay (always-on split pane)', () => {
+		const target = makeTemp()
+		scaffold({
+			targetDir: target,
+			appName: 'Vue Sidebar',
+			appId: 'io.x.vue.sidebar',
+			nameKebab: 'vue-sidebar',
+			templateId: 'with-vue',
+			templateVariant: 'vue',
+			layout: 'sidebar',
+		})
+		const app = readFileSync(join(target, 'src', 'App.vue'), 'utf8')
+		expect(app).toContain('when="xs"')
 	})
 
 	it('injects Electron localai preload IPC end-to-end', () => {

@@ -17,5 +17,6 @@ Ionic **Vue** app scaffolded with [@involvex/ionic-everywhere](https://github.co
 
 ## Layout / styling overlays
 
-`--layout`, `--styling`, and `--theme` overlays currently target the React
-templates. The Vue starter ships the tabs + sidebar layout with Ionic CSS.
+`--layout drawer|sidebar`, `--styling tailwind|shadcn|kumo`, and `--theme`
+work on this Vue starter (`layout-*-vue` overlays plus shared style/theme
+files). Feature overlays (`-t with-ai` / `with-localai`) stay React-only.

@@ -114,3 +114,37 @@ jobs:
         run: bun scripts/cli-test.mjs
       - name: 'CLI smoke: upgrade round-trip'
         run: bun scripts/cli-test-upgrade.mjs
+
+  localai-smoke:
+    defaults:
+      run:
+        shell: bash
+    needs: lint-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Bun
+        run: |
+          curl -fsSL -o /tmp/bun.zip \
+            https://github.com/oven-sh/bun/releases/download/bun-v1.4.0/bun-linux-x64.zip
+          python3 -m zipfile -e /tmp/bun.zip /tmp/bun-extract
+          mkdir -p ~/.bun/bin
+          mv /tmp/bun-extract/bun-linux-x64/bun ~/.bun/bin/bun
+          cp /tmp/bun-extract/bun-linux-x64/bunx ~/.bun/bin/bunx 2>/dev/null || true
+          chmod +x ~/.bun/bin/bun ~/.bun/bin/bunx 2>/dev/null || true
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          "$HOME/.bun/bin/bun" --version
+      - name: Cache bun + GGUF
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.bun/install/cache
+            .test/localai-cache
+          key: localai-smoke-${{ hashFiles('scripts/localai-smoke.mjs') }}
+          restore-keys: localai-smoke-
+      - run: bun install --frozen-lockfile
+      - name: Tiny GGUF completion (node-llama-cpp)
+        run: bun scripts/localai-smoke.mjs --gguf
+      - name: WebLLM / WebGPU (skips without GPU)
+        run: bun scripts/localai-smoke.mjs --webgpu
