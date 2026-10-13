@@ -1,5 +1,10 @@
 ## Unreleased
 
+## [0.2.1] - 2026-10-13
+
+npm 0.2.0 was staged then blocked for republish; this is the published tag
+for the 0.2.0 feature set.
+
 ## [0.2.0] - 2026-10-13
 
 ### Added

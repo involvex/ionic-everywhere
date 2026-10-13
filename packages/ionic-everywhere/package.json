@@ -1,6 +1,6 @@
 {
 	"name": "@involvex/ionic-everywhere",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "Scaffold one responsive Ionic React or Vue codebase that builds Web, Android and Desktop apps.",
 	"keywords": [
 		"ionic",
@@ -36,7 +36,6 @@
 		"build": "bun build src/cli.ts --outfile=dist/cli.js --target=node --format=esm",
 		"dev": "bun run --hot src/cli.ts",
 		"prepublishOnly": "bun run build",
-		"publish": "bun publish --access public",
 		"typecheck": "tsc -p tsconfig.json --noEmit"
 	},
 	"dependencies": {
