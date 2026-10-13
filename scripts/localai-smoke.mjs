@@ -15,10 +15,24 @@ import {fileURLToPath} from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const cacheDir = join(root, '.test', 'localai-cache')
 const workDir = join(root, '.test', 'gguf-smoke')
-const MODEL_URL =
+/**
+ * karpathy/tinyllamas ships .pt/.bin only (no GGUF) — do not use it here.
+ * Primary is a ~5 MB Q4_K_M TinyStories GGUF; the Q8_0 sibling and the
+ * Qwen 0.5B quant are fallbacks. Override with LOCALAI_GGUF_URL (comma-
+ * separated for multiple candidates).
+ */
+const MODEL_URLS = (
 	process.env.LOCALAI_GGUF_URL ??
-	'https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.gguf'
-const MODEL_NAME = 'stories15M.gguf'
+	[
+		'https://huggingface.co/afrideva/Tinystories-gpt-0.1-3m-GGUF/resolve/main/tinystories-gpt-0.1-3m.Q4_K_M.gguf',
+		'https://huggingface.co/afrideva/Tinystories-gpt-0.1-3m-GGUF/resolve/main/tinystories-gpt-0.1-3m.Q8_0.gguf',
+		'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q2_k.gguf',
+	].join(',')
+)
+	.split(',')
+	.map(s => s.trim())
+	.filter(Boolean)
+const MODEL_NAME = 'smoke-model.gguf'
 
 const flags = new Set(process.argv.slice(2))
 const wantGguf = flags.has('--gguf') || flags.size === 0
@@ -59,9 +73,27 @@ async function download(url, dest) {
 	await pipeline(res.body, createWriteStream(dest))
 }
 
+async function downloadFirst(urls, dest) {
+	if (existsSync(dest)) {
+		log(`using cached ${dest}`)
+		return
+	}
+	let lastErr
+	for (const url of urls) {
+		try {
+			await download(url, dest)
+			return
+		} catch (err) {
+			lastErr = err
+			log(`mirror failed (${url}): ${err.message}`)
+		}
+	}
+	throw lastErr ?? new Error('no model mirrors configured')
+}
+
 async function smokeGguf() {
 	const modelPath = join(cacheDir, MODEL_NAME)
-	await download(MODEL_URL, modelPath)
+	await downloadFirst(MODEL_URLS, modelPath)
 	mkdirSync(workDir, {recursive: true})
 	const pkgPath = join(workDir, 'package.json')
 	const {writeFileSync} = await import('node:fs')
