@@ -296,7 +296,7 @@ const FEATURE_DEPS: Record<
 > = {
 	ai: {
 		dependencies: {
-			'@opencode/client': '^0.1.0',
+			'@opencode/client': '^2.0.28',
 		},
 	},
 	localai: {

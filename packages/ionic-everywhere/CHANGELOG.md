@@ -1,5 +1,10 @@
 ## Unreleased
 
+### Fixed
+
+- `with-ai` pins `@opencode/client` to `^2.0.28`. The previous `^0.1.0` range
+  matches no published version, so `bun install` failed during scaffold.
+
 ## [0.2.1] - 2026-10-13
 
 npm 0.2.0 was staged then blocked for republish; this is the published tag

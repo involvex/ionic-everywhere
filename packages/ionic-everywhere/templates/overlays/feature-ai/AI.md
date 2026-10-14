@@ -19,8 +19,9 @@ This project was scaffolded with `-t with-ai`.
 
 ## Packages
 
-- `@opencode/client` — typed OpenCode HTTP client (optional; the app falls back
-  to raw `fetch` if the client API differs).
+- `@opencode/client` `^2.0.28` — typed OpenCode HTTP client (optional; the app
+  falls back to raw `fetch` if the client API differs). There is no `0.1.x`
+  line; `^0.1.0` does not resolve.
 
 ## Android note
 

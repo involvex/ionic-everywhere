@@ -747,7 +747,7 @@ describe('feature template overlays (with-ai / with-localai)', () => {
 		expect(nav).toContain('/chat')
 		expect(nav).toContain('ChatPage')
 		const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
-		expect(pkg.dependencies['@opencode/client']).toBeTruthy()
+		expect(pkg.dependencies['@opencode/client']).toBe('^2.0.28')
 		const {options} = JSON.parse(
 			readFileSync(join(target, MANIFEST_NAME), 'utf8'),
 		) as {options: Record<string, unknown>}
