@@ -1,3 +1,9 @@
+## [0.2.2] - 2026-10-14
+
+### Changed
+
+- bump ionic-everywhere version to 0 (`release`)
+
 ## Unreleased
 
 ### Fixed
