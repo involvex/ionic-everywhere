@@ -11,15 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Bun
         run: BUN_INSTALL_VERSION=1.4.0 curl -fsSL https://bun.sh/install | bash && echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
         shell: bash
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - run: bun install --frozen-lockfile
       - run: bun run --filter @involvex/ionic-everywhere build
       - name: Scaffold and build debug APK
@@ -27,7 +27,7 @@ jobs:
           bun packages/ionic-everywhere/dist/cli.js new .test/artifacts-android --yes --pm bun --no-git
           cd .test/artifacts-android
           bun run build:android
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: app-debug-apk
           path: .test/artifacts-android/android/app/build/outputs/apk/debug/*.apk
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Bun
         run: BUN_INSTALL_VERSION=1.4.0 curl -fsSL https://bun.sh/install | bash && echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
         shell: bash
@@ -48,7 +48,7 @@ jobs:
           bun packages/ionic-everywhere/dist/cli.js new .test/artifacts-desktop --yes --pm bun --no-git
           cd .test/artifacts-desktop
           bun run build:desktop
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: desktop-linux-dist
           path: .test/artifacts-desktop/electron/dist/*

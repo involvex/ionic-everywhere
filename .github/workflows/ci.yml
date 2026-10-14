@@ -21,7 +21,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Bun
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
@@ -47,7 +47,7 @@ jobs:
           "$HOME/.bun/bin/bun" --version
         shell: bash
       - name: Cache bun install cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
@@ -55,7 +55,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run ci:lint-test
       - name: Upload CLI dist
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: cli-dist
           path: packages/ionic-everywhere/dist/
@@ -73,7 +73,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Install Bun
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
@@ -99,13 +99,13 @@ jobs:
           "$HOME/.bun/bin/bun" --version
         shell: bash
       - name: Cache bun install cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       - name: Download CLI dist from lint-test
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: cli-dist
           path: packages/ionic-everywhere/dist/
